@@ -23,13 +23,13 @@ use League\CommonMark\Block\Element\Paragraph;
 use League\CommonMark\Block\Parser\BlockParserInterface;
 use League\CommonMark\ContextInterface;
 use League\CommonMark\Cursor;
-use League\CommonMark\Ext\Table\Table;
-use League\CommonMark\Ext\Table\TableCell;
-use League\CommonMark\Ext\Table\TableRow;
+use League\CommonMark\Extension\Table\Table;
+use League\CommonMark\Extension\Table\TableCell;
+use League\CommonMark\Extension\Table\TableRow;
 
 use function array_shift;
 use function explode;
-use function strpos;
+use function str_starts_with;
 use function substr;
 
 /**
@@ -91,7 +91,7 @@ class CensusTableParser implements BlockParserInterface
         // Subsequent lines are the table body.
         while ($lines !== []) {
             $line = array_shift($lines);
-            $row = $this->parseRow($line, TableCell::TYPE_BODY);
+            $row  = $this->parseRow($line, TableCell::TYPE_BODY);
             $table->getHead()->appendChild($row);
         }
 
@@ -112,7 +112,7 @@ class CensusTableParser implements BlockParserInterface
         $row   = new TableRow();
 
         foreach ($cells as $cell) {
-            if (strpos($cell, self::TH_PREFIX) === 0) {
+            if (str_starts_with($cell, self::TH_PREFIX)) {
                 $cell = substr($cell, strlen(self::TH_PREFIX));
                 $type = TableCell::TYPE_HEAD;
             }

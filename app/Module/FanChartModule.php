@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -22,6 +22,7 @@ namespace Fisharebest\Webtrees\Module;
 use Aura\Router\RouterContainer;
 use Fig\Http\Message\RequestMethodInterface;
 use Fisharebest\Webtrees\Auth;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Menu;
@@ -36,11 +37,13 @@ use function app;
 use function array_keys;
 use function assert;
 use function implode;
+use function intdiv;
 use function is_string;
 use function max;
 use function min;
 use function redirect;
 use function route;
+use function str_contains;
 
 /**
  * Class FanChartModule
@@ -49,8 +52,7 @@ class FanChartModule extends AbstractModule implements ModuleChartInterface, Req
 {
     use ModuleChartTrait;
 
-    private const ROUTE_NAME = 'fan-chart';
-    private const ROUTE_URL  = '/tree/{tree}/fan-chart-{style}-{generations}-{width}/{xref}';
+    protected const ROUTE_URL  = '/tree/{tree}/fan-chart-{style}-{generations}-{width}/{xref}';
 
     // Chart styles
     private const STYLE_HALF_CIRCLE          = '2';
@@ -97,7 +99,7 @@ class FanChartModule extends AbstractModule implements ModuleChartInterface, Req
         assert($router_container instanceof RouterContainer);
 
         $router_container->getMap()
-            ->get(self::ROUTE_NAME, self::ROUTE_URL, $this)
+            ->get(static::class, static::ROUTE_URL, $this)
             ->allows(RequestMethodInterface::METHOD_POST)
             ->tokens([
                 'generations' => '\d+',
@@ -173,7 +175,7 @@ class FanChartModule extends AbstractModule implements ModuleChartInterface, Req
      */
     public function chartUrl(Individual $individual, array $parameters = []): string
     {
-        return route(self::ROUTE_NAME, [
+        return route(static::class, [
                 'xref' => $individual->xref(),
                 'tree' => $individual->tree()->name(),
             ] + $parameters + self::DEFAULT_PARAMETERS);
@@ -194,7 +196,7 @@ class FanChartModule extends AbstractModule implements ModuleChartInterface, Req
         $xref = $request->getAttribute('xref');
         assert(is_string($xref));
 
-        $individual = Individual::getInstance($xref, $tree);
+        $individual = Registry::individualFactory()->make($xref, $tree);
         $individual = Auth::checkIndividualAccess($individual, false, true);
 
         $style       = $request->getAttribute('style');
@@ -206,7 +208,7 @@ class FanChartModule extends AbstractModule implements ModuleChartInterface, Req
         if ($request->getMethod() === RequestMethodInterface::METHOD_POST) {
             $params = (array) $request->getParsedBody();
 
-            return redirect(route(self::ROUTE_NAME, [
+            return redirect(route(static::class, [
                 'tree'        => $tree->name(),
                 'xref'        => $params['xref'],
                 'style'       => $params['style'],
@@ -215,7 +217,7 @@ class FanChartModule extends AbstractModule implements ModuleChartInterface, Req
             ]));
         }
 
-        Auth::checkComponentAccess($this, 'chart', $tree, $user);
+        Auth::checkComponentAccess($this, ModuleChartInterface::class, $tree, $user);
 
         $width = min($width, self::MAXIMUM_WIDTH);
         $width = max($width, self::MINIMUM_WIDTH);
@@ -316,7 +318,10 @@ class FanChartModule extends AbstractModule implements ModuleChartInterface, Req
             // clean current generation area
             $deg2 = 360 + ($fandeg - 180) / 2;
             $deg1 = $deg2 - $fandeg;
-            imagefilledarc($image, (int) $cx, (int) $cy, (int) $rx, (int) $rx, (int) $deg1, (int) $deg2, $backgrounds['U'], IMG_ARC_PIE);
+
+            // The arc size must be an even number of pixels: https://bugs.php.net/bug.php?id=79763
+            $even_rx = 2 * intdiv(1 + (int) $rx, 2);
+            imagefilledarc($image, (int) $cx, (int) $cy, $even_rx, $even_rx, (int) $deg1, (int) $deg2, $backgrounds['U'], IMG_ARC_PIE);
             $rx -= 3;
 
             // calculate new angle
@@ -346,7 +351,9 @@ class FanChartModule extends AbstractModule implements ModuleChartInterface, Req
 
                     $background = $backgrounds[$person->sex()];
 
-                    imagefilledarc($image, (int) $cx, (int) $cy, (int) $rx, (int) $rx, (int) $deg1, (int) $deg2, $background, IMG_ARC_PIE);
+                    // The arc size must be an even number of pixels: https://bugs.php.net/bug.php?id=79763
+                    $even_rx = 2 * intdiv(1 + (int) $rx, 2);
+                    imagefilledarc($image, (int) $cx, (int) $cy, $even_rx, $even_rx, (int) $deg1, (int) $deg2, $background, IMG_ARC_PIE);
 
                     // split and center text by lines
                     $wmax = (int) ($angle * 7 / 7 * $scale);
@@ -507,7 +514,7 @@ class FanChartModule extends AbstractModule implements ModuleChartInterface, Req
         // do not split hebrew line
         $found = false;
         foreach ($RTLOrd as $ord) {
-            if (strpos($data, chr($ord)) !== false) {
+            if (str_contains($data, chr($ord))) {
                 $found = true;
             }
         }
@@ -567,7 +574,7 @@ class FanChartModule extends AbstractModule implements ModuleChartInterface, Req
     /**
      * This chart can display its output in a number of styles
      *
-     * @return array
+     * @return array<string>
      */
     protected function styles(): array
     {

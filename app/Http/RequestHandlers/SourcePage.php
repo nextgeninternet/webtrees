@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -23,6 +23,7 @@ use Fig\Http\Message\StatusCodeInterface;
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Fact;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Services\ClipboardService;
 use Fisharebest\Webtrees\Source;
 use Fisharebest\Webtrees\Tree;
@@ -47,20 +48,20 @@ class SourcePage implements RequestHandlerInterface
 
     // Show the source's facts in this order:
     private const FACT_ORDER = [
-        1 => 'TITL',
-        'ABBR',
-        'AUTH',
-        'DATA',
-        'PUBL',
-        'TEXT',
-        'REPO',
-        'NOTE',
-        'OBJE',
-        'REFN',
-        'RIN',
-        '_UID',
-        'CHAN',
-        'RESN',
+        1 => 'SOUR:TITL',
+        'SOUR:ABBR',
+        'SOUR:AUTH',
+        'SOUR:DATA',
+        'SOUR:PUBL',
+        'SOUR:TEXT',
+        'SOUR:REPO',
+        'SOUR:NOTE',
+        'SOUR:OBJE',
+        'SOUR:REFN',
+        'SOUR:RIN',
+        'SOUR:_UID',
+        'SOUR:CHAN',
+        'SOUR:RESN',
     ];
 
     /** @var ClipboardService */
@@ -89,7 +90,7 @@ class SourcePage implements RequestHandlerInterface
         $xref = $request->getAttribute('xref');
         assert(is_string($xref));
 
-        $source = Source::getInstance($xref, $tree);
+        $source = Registry::sourceFactory()->make($xref, $tree);
         $source = Auth::checkSourceAccess($source, false);
 
         // Redirect to correct xref/slug
@@ -98,16 +99,17 @@ class SourcePage implements RequestHandlerInterface
         }
 
         return $this->viewResponse('source-page', [
-            'clipboard_facts' => $this->clipboard_service->pastableFacts($source, new Collection()),
-            'facts'           => $this->facts($source),
-            'families'        => $source->linkedFamilies('SOUR'),
-            'individuals'     => $source->linkedIndividuals('SOUR'),
-            'meta_robots'     => 'index,follow',
-            'notes'           => $source->linkedNotes('SOUR'),
-            'media_objects'   => $source->linkedMedia('SOUR'),
-            'source'          => $source,
-            'title'           => $source->fullName(),
-            'tree'            => $tree,
+            'clipboard_facts'  => $this->clipboard_service->pastableFacts($source, new Collection()),
+            'facts'            => $this->facts($source),
+            'families'         => $source->linkedFamilies('SOUR'),
+            'individuals'      => $source->linkedIndividuals('SOUR'),
+            'meta_description' => '',
+            'meta_robots'      => 'index,follow',
+            'notes'            => $source->linkedNotes('SOUR'),
+            'media_objects'    => $source->linkedMedia('SOUR'),
+            'source'           => $source,
+            'title'            => $source->fullName(),
+            'tree'             => $tree,
         ]);
     }
 
@@ -120,8 +122,8 @@ class SourcePage implements RequestHandlerInterface
     {
         return $record->facts()
             ->sort(static function (Fact $x, Fact $y): int {
-                $sort_x = array_search($x->getTag(), self::FACT_ORDER, true) ?: PHP_INT_MAX;
-                $sort_y = array_search($y->getTag(), self::FACT_ORDER, true) ?: PHP_INT_MAX;
+                $sort_x = array_search($x->tag(), self::FACT_ORDER, true) ?: PHP_INT_MAX;
+                $sort_y = array_search($y->tag(), self::FACT_ORDER, true) ?: PHP_INT_MAX;
 
                 return $sort_x <=> $sort_y;
             });

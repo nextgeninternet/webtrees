@@ -41,51 +41,52 @@
         "ext-xml": "*",
         "ext-zip": "*",
         "aura/router": "~3.1",
-        "cweagans/composer-patches": "~1.6",
         "doctrine/dbal": "~2.9",
-        "ezyang/htmlpurifier": "~4.10",
+        "ezyang/htmlpurifier": "~4.12",
         "fig/http-message-util": "^1.1",
-        "fisharebest/algorithm": "~1.3",
+        "fisharebest/algorithm": "~1.5",
         "fisharebest/ext-calendar": "~2.5",
         "fisharebest/flysystem-chroot-adapter": "~1.0",
         "fisharebest/localization": "~1.15",
-        "guzzlehttp/guzzle": "~6.0",
+        "guzzlehttp/guzzle": "~6.5",
         "illuminate/container": "~5.8",
         "illuminate/database": "~5.8",
         "illuminate/support": "~5.8",
-        "league/commonmark": "~1.0",
-        "league/commonmark-ext-table": "~2.1",
+        "intervention/image": "^2.5",
+        "io-developer/php-whois": "~3.5",
+        "league/commonmark": "~1.4",
         "league/flysystem": "~1.0",
         "league/flysystem-cached-adapter": "~1.0",
         "league/flysystem-ziparchive": "~1.0",
-        "league/glide": "~1.3",
         "middlewares/client-ip": "~1.3",
-        "nesbot/carbon": "~2.14",
-        "nyholm/psr7": "~1.1",
-        "nyholm/psr7-server": "~0.3",
+        "mlocati/ip-lib": "~1.9",
+        "nesbot/carbon": "~2.35",
+        "nyholm/psr7": "~1.3",
+        "nyholm/psr7-server": "~1.0",
         "oscarotero/middleland": "~1.0",
         "psr/cache": "~1.0",
         "psr/http-message": "~1.0",
         "psr/http-server-handler": "~1.0",
         "psr/http-server-middleware": "~1.0",
-        "ramsey/uuid": "~3.8",
-        "swiftmailer/swiftmailer": "~6.1",
+        "ramsey/uuid": "~3.9",
+        "swiftmailer/swiftmailer": "~6.2",
         "symfony/cache": "~4.4",
         "symfony/expression-language": "~4.4",
-        "symfony/polyfill-mbstring": "~1.11",
-        "symfony/polyfill-php72": "~1.11",
-        "tecnickcom/tcpdf": "~6.2"
+        "symfony/polyfill-mbstring": "~1.17",
+        "symfony/polyfill-php80": "^1.17",
+        "tecnickcom/tcpdf": "^6.3.5"
     },
     "require-dev": {
         "ext-pdo_sqlite": "*",
         "ext-sqlite3": "*",
-        "composer/composer": "~1.8",
+        "composer/composer": "~1.10",
         "league/flysystem-memory": "~1.0",
-        "maximebf/debugbar": "~1.15",
-        "php-coveralls/php-coveralls": "~2.1",
-        "phpunit/phpunit": "~7.0|~8.0"
+        "maximebf/debugbar": "~1.16",
+        "php-coveralls/php-coveralls": "~2.2",
+        "phpunit/phpunit": "~7.5|~8.0"
     },
     "suggest": {
+        "ext-imagick": "Required to generate thumbnail images",
         "ext-pdo_mysql": "Required to use MySQL for database storage",
         "ext-pdo_sqlite": "Required to use SQLite for database storage",
         "ext-pdo_pgsql": "Required to use PostgreSQL for database storage",
@@ -114,8 +115,7 @@
         ],
         "webtrees:phpcs": [
             "@composer global require squizlabs/php_codesniffer=* --quiet",
-            "~/.composer/vendor/bin/phpcs --standard=PSR12 --colors --extensions=php --exclude=Generic.Files.LineLength index.php app modules_v4 tests",
-            "~/.composer/vendor/bin/phpcs --standard=PSR12 --colors --extensions=phtml -n --exclude=Generic.Files.LineLength resources/views",
+            "~/.composer/vendor/bin/phpcs --standard=PSR12 --colors --extensions=php --exclude=Generic.Files.LineLength index.php app modules_v4/example* tests",
             "~/.composer/vendor/bin/phpcs --colors --extensions=css resources/css"
         ],
         "webtrees:phpstan": [
@@ -125,7 +125,7 @@
             "@composer global require --quiet phpstan/phpstan-strict-rules=*",
             "@composer global require --quiet phpstan/phpstan-phpunit=*",
             "@composer install --quiet",
-            "~/.composer/vendor/bin/phpstan analyze --level=max app modules_v4 index.php",
+            "~/.composer/vendor/bin/phpstan analyze --level=max app modules_v4/example* index.php",
             "@composer install --no-dev --quiet"
         ],
         "webtrees:psalm": [
@@ -147,6 +147,9 @@
         "webtrees:lang": [
             "Fisharebest\\Webtrees\\Console\\ComposerScripts::languageFiles"
         ],
+        "webtrees:missing-tests": [
+            "Fisharebest\\Webtrees\\Console\\ComposerScripts::missingTests"
+        ],
         "webtrees:po": [
             "sed -i.bak -e 's/\\(I18N::[^)]*[)]\\)/<?php echo \\1; ?>/g' resources/xml/reports/*.xml",
             "git grep -I --name-only --fixed-strings -e I18N:: -- '*.php' '*.phtml' '*.xml' | xargs xgettext --package-name=webtrees --package-version=1.0 --msgid-bugs-address=i18n@webtrees.net --output=resources/lang/webtrees.pot --no-wrap --language=PHP --add-comments=I18N --from-code=utf-8 --keyword --keyword=translate:1 --keyword=translateContext:1c,2 --keyword=plural:1,2",
@@ -165,14 +168,5 @@
         "webtrees:coverage": "Generate test coverage report",
         "webtrees:lang": "Compile the language files (messages.php)",
         "webtrees:po": "Update the language (webtrees.pot, *.po)"
-    },
-    "extra": {
-        "composer-exit-on-patch-failure": true,
-        "enable-patching": true,
-        "patches": {
-            "tecnickcom/tcpdf": {
-                "PR #137": "https://github.com/tecnickcom/TCPDF/commit/0c73a9c580246b6f4e2eea196f0e4759f79ad632.patch"
-            }
-        }
     }
 }

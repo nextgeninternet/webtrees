@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
-use Fisharebest\Webtrees\Http\Controllers\AbstractBaseController;
+use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Services\TreeService;
 use Fisharebest\Webtrees\Site;
@@ -27,12 +27,15 @@ use Fisharebest\Webtrees\Tree;
 use Fisharebest\Webtrees\User;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 /**
  * Show a login form.
  */
-class LoginPage extends AbstractBaseController
+class LoginPage implements RequestHandlerInterface
 {
+    use ViewResponseTrait;
+
     /** @var TreeService */
     private $tree_service;
 
@@ -67,7 +70,7 @@ class LoginPage extends AbstractBaseController
         // No tree?  perhaps we came here from a page without one.
         if ($tree === null) {
             $default = Site::getPreference('DEFAULT_GEDCOM');
-            $tree = $this->tree_service->all()->get($default) ?? $this->tree_service->all()->first();
+            $tree    = $this->tree_service->all()->get($default) ?? $this->tree_service->all()->first();
 
             if ($tree instanceof Tree) {
                 return redirect(route(self::class, ['tree' => $tree->name(), 'url' => $url]));

@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
+use Fisharebest\Webtrees\Family;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Services\SearchService;
@@ -33,11 +34,11 @@ use Psr\Http\Server\RequestHandlerInterface;
 use function array_filter;
 use function assert;
 use function in_array;
-use function preg_match;
 use function preg_replace;
 use function redirect;
-use function str_replace;
 use function trim;
+
+use const PREG_SET_ORDER;
 
 /**
  * Search for genealogy data
@@ -86,15 +87,16 @@ class SearchGeneralPage implements RequestHandlerInterface
         $search_sources      = (bool) ($params['search_sources'] ?? false);
         $search_notes        = (bool) ($params['search_notes'] ?? false);
 
-        // Default to individuals only
+        // Default to families and individuals only
         if (!$search_individuals && !$search_families && !$search_repositories && !$search_sources && !$search_notes) {
+            $search_families    = true;
             $search_individuals = true;
         }
 
         // What to search for?
         $search_terms = $this->extractSearchTerms($query);
 
-        // What trees to seach?
+        // What trees to search?
         if (Site::getPreference('ALLOW_CHANGE_GEDCOM') === '1') {
             $all_trees = $this->tree_service->all()->all();
         } else {
@@ -127,7 +129,9 @@ class SearchGeneralPage implements RequestHandlerInterface
                 $tmp1 = $this->search_service->searchFamilies($search_trees, $search_terms);
                 $tmp2 = $this->search_service->searchFamilyNames($search_trees, $search_terms);
 
-                $families = $tmp1->merge($tmp2)->unique();
+                $families = $tmp1->merge($tmp2)->unique(static function (Family $family): string {
+                    return $family->xref() . '@' . $family->tree()->id();
+                });
             }
 
             if ($search_repositories) {
@@ -193,18 +197,20 @@ class SearchGeneralPage implements RequestHandlerInterface
         $search_terms = [];
 
         // Words in double quotes stay together
-        while (preg_match('/"([^"]+)"/', $query, $match)) {
+        preg_match_all('/"([^"]+)"/', $query, $matches, PREG_SET_ORDER);
+        foreach ($matches as $match) {
             $search_terms[] = trim($match[1]);
-            $query          = str_replace($match[0], '', $query);
+            // Remove this string from the search query
+            $query = strtr($query, [$match[0] => '']);
         }
 
         // Treat CJK characters as separate words, not as characters.
         $query = preg_replace('/\p{Han}/u', '$0 ', $query);
 
         // Other words get treated separately
-        while (preg_match('/[\S]+/', $query, $match)) {
-            $search_terms[] = trim($match[0]);
-            $query          = str_replace($match[0], '', $query);
+        preg_match_all('/[\S]+/', $query, $matches, PREG_SET_ORDER);
+        foreach ($matches as $match) {
+            $search_terms[] = $match[0];
         }
 
         return $search_terms;

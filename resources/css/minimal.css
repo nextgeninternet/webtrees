@@ -1,6 +1,6 @@
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -15,13 +15,6 @@
 
 /* The minimal theme */
 @import "_base.css";
-@import "_block-charts.css";
-@import "_charts.css";
-@import "_colorbox.css";
-@import "_lists.css";
-@import "_mime-type-icons.css";
-@import "_on-screen-keyboard.css";
-@import "_tab-relatives.css";
 
 /* Colors for chart boxes, etc. */
 :root {
@@ -108,7 +101,8 @@ table {
 
 .wt-site-title {
     order: 1;
-    flex: 1 1 0;
+    flex: 1 1 auto;
+    width: auto;
     font-size: 1.75rem;
 }
 
@@ -128,7 +122,8 @@ table {
 
 .wt-secondary-navigation {
     order: 2;
-    flex: 0 0 0;
+    flex: 0 0 auto;
+    width: auto;
     white-space: nowrap;
 }
 
@@ -447,10 +442,6 @@ a:hover {
     padding: 1px;
 }
 
-.source_citations {
-    display: none;
-}
-
 /* ==== FAQ table styles ===== */
 table.faq {
     background-color: #ddd;
@@ -494,22 +485,8 @@ div.faq_body {
     clear: left;
 }
 
-#sex {
-    float: right;
-}
-
-#dates {
-    color: #666;
-    float: right;
-}
-
 .label {
     font-weight: bold;
-}
-
-#individual-names .wt-icon-edit,
-#individual-names .wt-icon-delete {
-    float: right;
 }
 
 #indi_note .fact_NOTE {
@@ -530,51 +507,11 @@ div.faq_body {
     clear: both;
 }
 
-/* markdown formatting */
-
-.markdown {
-    /* Tables and pre-formatted text can break the layout. */
-    overflow-x: auto;
-}
-
-.markdown p {
-    margin: 0 0 0.5em;
-    white-space: pre-wrap;
-}
-
-.markdown table {
-    border-collapse: collapse;
-    font-size: 10px;
-    margin-bottom: 5px;
-}
-
-.markdown th {
-    font-weight: bold;
-}
-
-.markdown td,
-.markdown th {
-    border: solid thin #000;
-    padding: 3px;
-}
-
 .odometer {
     font-family: courier, monospace;
     font-weight: bold;
     background: #000;
     color: #fff;
-}
-
-/* ======== Indi tabs ======== */
-/* Facts & Events tab */
-.media-display-image {
-    float: left;
-}
-
-.media-display-title {
-    float: left;
-    font-style: italic;
-    margin: 10px;
 }
 
 .upcoming_events_block button,
@@ -636,38 +573,6 @@ div.faq_body {
     margin: 0;
     padding: 0;
     white-space: nowrap;
-}
-
-/* Extra info */
-#sb_content_extra_info {
-    font-size: 80%;
-    font-weight: bold;
-    margin-top: 1px;
-    overflow: hidden;
-    padding: 5px;
-}
-
-#sb_content_extra_info .editfacts {
-    float: right;
-    margin-top: -10px;
-}
-
-#sb_content_extra_info a {
-    display: block;
-}
-
-#sb_content_extra_info span {
-    font-weight: normal;
-}
-
-#sb_content_extra_info span a {
-    display: inline;
-}
-
-#sb_content_extra_info #hitcounter {
-    border-top: 1px solid #b2c7d7;
-    font-weight: bold;
-    padding-top: 5px;
 }
 
 /* Stories module */
@@ -1051,16 +956,6 @@ a > .wt-icon-arrow-up:hover {
     min-width: 12rem;
 }
 
-/*
- * Drag and drop sortable lists
- */
-.wt-sortable-list {
-}
-
-.wt-sortable-item {
-    cursor: move;
-}
-
 /* Some blocks show a reduced version on the right-hand side. */
 .wt-side-blocks .wt-side-block-optional {
     display: none !important;
@@ -1143,18 +1038,14 @@ a > .wt-icon-arrow-up:hover {
     vertical-align: top;
 }
 
-/*
- * Place hierarchy
- *
- * wt-place-hierarchy-page
- */
-
-#place-hierarchy ul {
-    list-style-type: none;
+.wt-calendar-month {
+    border-collapse: collapse;
 }
 
-.d-table-cell {
-    padding-right: 5px;
+.wt-calendar-month .wt-page-options-label,
+.wt-calendar-month .wt-page-options-value {
+    border: solid grey thin;
+    padding: 0.2rem;
 }
 
 /* Some menus (e.g. languages) can be longer than a page */

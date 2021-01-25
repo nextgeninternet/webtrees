@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -21,7 +21,7 @@ namespace Fisharebest\Webtrees\Module;
 
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Exceptions\HttpAccessDeniedException;
-use Fisharebest\Webtrees\Individual;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
 use Illuminate\Support\Collection;
 use Psr\Http\Message\ResponseInterface;
@@ -38,30 +38,6 @@ trait ModuleTabTrait
 {
     /** @var int The default position for this tab.  It can be changed in the control panel. */
     protected $tab_order;
-
-    /**
-     * @return string
-     */
-    abstract public function title(): string;
-
-    /**
-     * Get a the current access level for a module
-     *
-     * @param Tree   $tree
-     * @param string $interface
-     *
-     * @return int
-     */
-    abstract public function accessLevel(Tree $tree, string $interface): int;
-
-    /**
-     * Generate the HTML content of this tab.
-     *
-     * @param Individual $individual
-     *
-     * @return string
-     */
-    abstract public function getTabContent(Individual $individual): string;
 
     /**
      * The text that appears on the tab.
@@ -127,12 +103,12 @@ trait ModuleTabTrait
 
         $xref = $request->getQueryParams()['xref'];
 
-        $record = Individual::getInstance($xref, $tree);
+        $record = Registry::individualFactory()->make($xref, $tree);
         $record = Auth::checkIndividualAccess($record);
 
         $user = $request->getAttribute('user');
 
-        if ($this->accessLevel($tree, 'tab') < Auth::accessLevel($tree, $user)) {
+        if ($this->accessLevel($tree, ModuleTabInterface::class) < Auth::accessLevel($tree, $user)) {
             throw new HttpAccessDeniedException();
         }
 

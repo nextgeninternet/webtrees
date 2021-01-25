@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -21,7 +21,8 @@ namespace Fisharebest\Webtrees\Functions;
 
 use Exception;
 use Fisharebest\Webtrees\Auth;
-use Fisharebest\Webtrees\Gedcom;
+use Fisharebest\Webtrees\Fact;
+use Fisharebest\Webtrees\Family;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
 
@@ -203,10 +204,10 @@ class Functions
      * @param Individual $individual2 The person to compute the relatiohip to
      * @param int        $maxlength   The maximum length of path
      *
-     * @return array     An array of nodes on the relationship path, or false if no path found
+     * @return array{'path':array<Individual|Family>,'relations':array<string>} An array of nodes on the relationship path
      * @throws Exception If no relationship exists
      */
-    public static function getRelationship(Individual $individual1, Individual $individual2, $maxlength = 4): array
+    public static function getRelationship(Individual $individual1, Individual $individual2, int $maxlength = 4): array
     {
         $spouse_codes = [
             'M' => 'hus',
@@ -325,7 +326,7 @@ class Functions
     /**
      * Convert the result of get_relationship() into a relationship name.
      *
-     * @param mixed[][] $nodes
+     * @param array{'path':array<Individual|Family>,'relations':array<string>} $nodes
      *
      * @return string
      */
@@ -349,6 +350,10 @@ class Functions
         //
         // This is very repetitive in English, but necessary in order to handle the
         // complexities of other languages.
+
+        // Assertions help static analysis tools to know which array element we selected.
+        assert(!$person1 instanceof Family);
+        assert(!$person2 instanceof Family);
 
         return self::getRelationshipNameFromPath(
             implode('', $path),
@@ -618,39 +623,46 @@ class Functions
             case 'par':
                 return I18N::translate('parent');
             case 'hus':
-                if ($person1 && $person2) {
+                if ($person1 instanceof Individual && $person2 instanceof Individual) {
+                    // We had the linking family earlier, but lost it.  Find it again.
                     foreach ($person1->spouseFamilies() as $family) {
                         if ($person2 === $family->spouse($person1)) {
-                            if ($family->facts(['MARR'], false, Auth::PRIV_HIDE)->isNotEmpty()) {
-                                if ($family->facts(Gedcom::DIVORCE_EVENTS, false, Auth::PRIV_HIDE)->isNotEmpty()) {
-                                    return I18N::translate('ex-husband');
+                            $event = $family->facts(['ANUL', 'DIV', 'ENGA', 'MARR'], true, Auth::PRIV_HIDE, true)->last();
+
+                            if ($event instanceof Fact) {
+                                switch ($event->tag()) {
+                                    case 'FAM:ANUL':
+                                    case 'FAM:DIV':
+                                        return I18N::translate('ex-husband');
+                                    case 'FAM:MARR':
+                                        return I18N::translate('husband');
+                                    case 'FAM:ENGA':
+                                        return I18N::translate('fiancé');
                                 }
-
-                                return I18N::translate('husband');
-                            }
-
-                            if ($family->facts(Gedcom::DIVORCE_EVENTS, false, Auth::PRIV_HIDE)->isNotEmpty()) {
-                                return I18N::translateContext('MALE', 'ex-partner');
                             }
                         }
                     }
                 }
 
                 return I18N::translateContext('MALE', 'partner');
+
             case 'wif':
-                if ($person1 && $person2) {
+                if ($person1 instanceof Individual && $person2 instanceof Individual) {
+                    // We had the linking family earlier, but lost it.  Find it again.
                     foreach ($person1->spouseFamilies() as $family) {
                         if ($person2 === $family->spouse($person1)) {
-                            if ($family->facts(['MARR'], false, Auth::PRIV_HIDE)->isNotEmpty()) {
-                                if ($family->facts(Gedcom::DIVORCE_EVENTS, false, Auth::PRIV_HIDE)->isNotEmpty()) {
-                                    return I18N::translate('ex-wife');
+                            $event = $family->facts(['ANUL', 'DIV', 'ENGA', 'MARR'], true, Auth::PRIV_HIDE, true)->last();
+
+                            if ($event instanceof Fact) {
+                                switch ($event->tag()) {
+                                    case 'FAM:ANUL':
+                                    case 'FAM:DIV':
+                                        return I18N::translate('ex-wife');
+                                    case 'FAM:MARR':
+                                        return I18N::translate('wife');
+                                    case 'FAM:ENGA':
+                                        return I18N::translate('fiancée');
                                 }
-
-                                return I18N::translate('wife');
-                            }
-
-                            if ($family->facts(Gedcom::DIVORCE_EVENTS, false, Auth::PRIV_HIDE)->isNotEmpty()) {
-                                return I18N::translateContext('FEMALE', 'ex-partner');
                             }
                         }
                     }
@@ -658,25 +670,29 @@ class Functions
 
                 return I18N::translateContext('FEMALE', 'partner');
             case 'spo':
-                if ($person1 && $person2) {
+                if ($person1 instanceof Individual && $person2 instanceof Individual) {
+                    // We had the linking family earlier, but lost it.  Find it again.
                     foreach ($person1->spouseFamilies() as $family) {
                         if ($person2 === $family->spouse($person1)) {
-                            if ($family->facts(['MARR'], false, Auth::PRIV_HIDE)->isNotEmpty()) {
-                                if ($family->facts(Gedcom::DIVORCE_EVENTS, false, Auth::PRIV_HIDE)->isNotEmpty()) {
-                                    return I18N::translate('ex-spouse');
+                            $event = $family->facts(['ANUL', 'DIV', 'ENGA', 'MARR'], true, Auth::PRIV_HIDE, true)->last();
+
+                            if ($event instanceof Fact) {
+                                switch ($event->tag()) {
+                                    case 'FAM:ANUL':
+                                    case 'FAM:DIV':
+                                        return I18N::translate('ex-spouse');
+                                    case 'FAM:MARR':
+                                        return I18N::translate('spouse');
+                                    case 'FAM:ENGA':
+                                        return I18N::translate('fiancé(e)');
                                 }
-
-                                return I18N::translate('spouse');
-                            }
-
-                            if ($family->facts(Gedcom::DIVORCE_EVENTS, false, Auth::PRIV_HIDE)->isNotEmpty()) {
-                                return I18N::translate('ex-partner');
                             }
                         }
                     }
                 }
 
                 return I18N::translate('partner');
+
             case 'son':
                 return I18N::translate('son');
             case 'dau':
@@ -1971,7 +1987,7 @@ class Functions
                                 return I18N::translateContext('(a man’s) sister’s great ×(%s-1) grandchild', 'great ×%s nephew/niece', I18N::number($down - 1));
                             }
                             return I18N::translateContext('(a woman’s) great ×%s nephew/niece', 'great ×%s nephew/niece', I18N::number($down - 1));
-                            
+
                         case 'he': // Source: Meliza Amity
                             if ($sex2 === 'M') {
                                 return I18N::translate('great ×%s nephew', I18N::number($down - 1));

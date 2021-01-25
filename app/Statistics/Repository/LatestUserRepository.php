@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2021 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -25,7 +25,6 @@ use Fisharebest\Webtrees\Contracts\UserInterface;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Services\UserService;
 use Fisharebest\Webtrees\Statistics\Repository\Interfaces\LatestUserRepositoryInterface;
-use Fisharebest\Webtrees\User;
 use Illuminate\Database\Capsule\Manager as DB;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\JoinClause;
@@ -51,7 +50,7 @@ class LatestUserRepository implements LatestUserRepositoryInterface
     }
 
     /**
-     * @inheritDoc
+     * @return string
      */
     public function latestUserId(): string
     {
@@ -78,7 +77,7 @@ class LatestUserRepository implements LatestUserRepositoryInterface
             ->leftJoin('user_setting as us', static function (JoinClause $join): void {
                 $join->on(static function (Builder $query): void {
                     $query->whereColumn('u.user_id', '=', 'us.user_id')
-                        ->where('us.setting_name', '=', User::PREF_TIMESTAMP_REGISTERED);
+                        ->where('us.setting_name', '=', UserInterface::PREF_TIMESTAMP_REGISTERED);
                 });
             })
             ->orderByDesc('us.setting_value')
@@ -90,7 +89,7 @@ class LatestUserRepository implements LatestUserRepositoryInterface
     }
 
     /**
-     * @inheritDoc
+     * @return string
      */
     public function latestUserName(): string
     {
@@ -98,7 +97,7 @@ class LatestUserRepository implements LatestUserRepositoryInterface
     }
 
     /**
-     * @inheritDoc
+     * @return string
      */
     public function latestUserFullName(): string
     {
@@ -106,30 +105,37 @@ class LatestUserRepository implements LatestUserRepositoryInterface
     }
 
     /**
-     * @inheritDoc
+     * @param string|null $format
+     *
+     * @return string
      */
     public function latestUserRegDate(string $format = null): string
     {
         $format    = $format ?? I18N::dateFormat();
         $user      = $this->latestUserQuery();
-        $timestamp = (int) $user->getPreference(User::PREF_TIMESTAMP_REGISTERED);
+        $timestamp = (int) $user->getPreference(UserInterface::PREF_TIMESTAMP_REGISTERED);
 
         return Carbon::createFromTimestamp($timestamp)->format(strtr($format, ['%' => '']));
     }
 
     /**
-     * @inheritDoc
+     * @param string|null $format
+     *
+     * @return string
      */
     public function latestUserRegTime(string $format = null): string
     {
         $format = $format ?? str_replace('%', '', I18N::timeFormat());
         $user   = $this->latestUserQuery();
 
-        return date($format, (int) $user->getPreference(User::PREF_TIMESTAMP_REGISTERED));
+        return date($format, (int) $user->getPreference(UserInterface::PREF_TIMESTAMP_REGISTERED));
     }
 
     /**
-     * @inheritDoc
+     * @param string|null $yes
+     * @param string|null $no
+     *
+     * @return string
      */
     public function latestUserLoggedin(string $yes = null, string $no = null): string
     {

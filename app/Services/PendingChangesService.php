@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,12 +20,29 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Services;
 
 use Fisharebest\Webtrees\Carbon;
+use Fisharebest\Webtrees\Registry;
+use Fisharebest\Webtrees\Family;
 use Fisharebest\Webtrees\Functions\FunctionsImport;
+use Fisharebest\Webtrees\Gedcom;
 use Fisharebest\Webtrees\GedcomRecord;
+use Fisharebest\Webtrees\Header;
+use Fisharebest\Webtrees\Individual;
+use Fisharebest\Webtrees\Location;
+use Fisharebest\Webtrees\Media;
+use Fisharebest\Webtrees\Note;
+use Fisharebest\Webtrees\Repository;
+use Fisharebest\Webtrees\Source;
+use Fisharebest\Webtrees\Submission;
+use Fisharebest\Webtrees\Submitter;
 use Fisharebest\Webtrees\Tree;
 use Illuminate\Database\Capsule\Manager as DB;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Expression;
+use Illuminate\Support\Collection;
+use stdClass;
+
+use function addcslashes;
+use function preg_match;
 
 /**
  * Manage pending changes
@@ -33,18 +50,91 @@ use Illuminate\Database\Query\Expression;
 class PendingChangesService
 {
     /**
+     * Which records have pending changes
+     *
+     * @param Tree $tree
+     *
+     * @return Collection<string>
+     */
+    public function pendingXrefs(Tree $tree): Collection
+    {
+        return DB::table('change')
+            ->where('status', '=', 'pending')
+            ->where('gedcom_id', '=', $tree->id())
+            ->orderBy('xref')
+            ->groupBy(['xref'])
+            ->pluck('xref');
+    }
+
+    /**
+     * @param Tree $tree
+     * @param int  $n
+     *
+     * @return array<array<stdClass>>
+     */
+    public function pendingChanges(Tree $tree, int $n): array
+    {
+        $xrefs = $this->pendingXrefs($tree);
+
+        $rows = DB::table('change')
+            ->join('user', 'user.user_id', '=', 'change.user_id')
+            ->where('status', '=', 'pending')
+            ->where('gedcom_id', '=', $tree->id())
+            ->whereIn('xref', $xrefs->slice(0, $n))
+            ->orderBy('change.change_id')
+            ->select(['change.*', 'user.user_name', 'user.real_name'])
+            ->get();
+
+        $changes = [];
+
+        $factories = [
+            Individual::RECORD_TYPE => Registry::individualFactory(),
+            Family::RECORD_TYPE     => Registry::familyFactory(),
+            Source::RECORD_TYPE     => Registry::sourceFactory(),
+            Repository::RECORD_TYPE => Registry::repositoryFactory(),
+            Media::RECORD_TYPE      => Registry::mediaFactory(),
+            Note::RECORD_TYPE       => Registry::noteFactory(),
+            Submitter::RECORD_TYPE  => Registry::submitterFactory(),
+            Submission::RECORD_TYPE => Registry::submissionFactory(),
+            Location::RECORD_TYPE   => Registry::locationFactory(),
+            Header::RECORD_TYPE     => Registry::headerFactory(),
+        ];
+
+        foreach ($rows as $row) {
+            $row->change_time = Carbon::make($row->change_time);
+
+            preg_match('/^0 (?:@' . Gedcom::REGEX_XREF . '@ )?(' . Gedcom::REGEX_TAG . ')/', $row->old_gedcom . $row->new_gedcom, $match);
+
+            $factory = $factories[$match[1]] ?? Registry::gedcomRecordFactory();
+
+            $row->record = $factory->new($row->xref, $row->old_gedcom, $row->new_gedcom, $tree);
+
+            $changes[$row->xref][] = $row;
+        }
+
+        return $changes;
+    }
+
+    /**
      * Accept all changes to a tree.
      *
      * @param Tree $tree
      *
+     * @param int  $n
+     *
      * @return void
+     * @throws \Fisharebest\Webtrees\Exceptions\GedcomErrorException
      */
-    public function acceptTree(Tree $tree): void
+    public function acceptTree(Tree $tree, int $n): void
     {
+        $xrefs = $this->pendingXrefs($tree);
+
         $changes = DB::table('change')
             ->where('gedcom_id', '=', $tree->id())
             ->where('status', '=', 'pending')
+            ->whereIn('xref', $xrefs->slice(0, $n))
             ->orderBy('change_id')
+            ->lockForUpdate()
             ->get();
 
         foreach ($changes as $change) {
@@ -74,6 +164,7 @@ class PendingChangesService
             ->where('xref', '=', $record->xref())
             ->where('status', '=', 'pending')
             ->orderBy('change_id')
+            ->lockForUpdate()
             ->get();
 
         foreach ($changes as $change) {
@@ -203,10 +294,10 @@ class PendingChangesService
         }
 
         if ($oldged !== '') {
-            $query->whereContains('old_gedcom', $oldged);
+            $query->where('old_gedcom', 'LIKE', '%' . addcslashes($oldged, '\\%_') . '%');
         }
         if ($newged !== '') {
-            $query->whereContains('new_gedcom', $oldged);
+            $query->where('new_gedcom', 'LIKE', '%' . addcslashes($newged, '\\%_') . '%');
         }
 
         if ($xref !== '') {
@@ -214,7 +305,7 @@ class PendingChangesService
         }
 
         if ($username !== '') {
-            $query->whereContains('user_name', $username);
+            $query->where('user_name', 'LIKE', '%' . addcslashes($username, '\\%_') . '%');
         }
 
         return $query;

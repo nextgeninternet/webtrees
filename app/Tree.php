@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2021 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -22,12 +22,9 @@ namespace Fisharebest\Webtrees;
 use Closure;
 use Fisharebest\Flysystem\Adapter\ChrootAdapter;
 use Fisharebest\Webtrees\Contracts\UserInterface;
-use Fisharebest\Webtrees\Functions\FunctionsExport;
+use Fisharebest\Webtrees\Services\GedcomExportService;
 use Fisharebest\Webtrees\Services\PendingChangesService;
 use Illuminate\Database\Capsule\Manager as DB;
-use Illuminate\Database\Query\Expression;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 use League\Flysystem\Filesystem;
 use League\Flysystem\FilesystemInterface;
@@ -35,6 +32,13 @@ use Psr\Http\Message\StreamInterface;
 use stdClass;
 
 use function app;
+use function array_key_exists;
+use function date;
+use function str_starts_with;
+use function strlen;
+use function strtoupper;
+use function substr;
+use function substr_replace;
 
 /**
  * Provide an interface to the wt_gedcom table.
@@ -375,49 +379,14 @@ class Tree
      * @param resource $stream
      *
      * @return void
+     *
+     * @deprecated since 2.0.5.  Will be removed in 2.1.0
      */
     public function exportGedcom($stream): void
     {
-        $buffer = FunctionsExport::reformatRecord(FunctionsExport::gedcomHeader($this, 'UTF-8'));
+        $gedcom_export_service = new GedcomExportService();
 
-        $union_families = DB::table('families')
-            ->where('f_file', '=', $this->id)
-            ->select(['f_gedcom AS gedcom', 'f_id AS xref', new Expression('LENGTH(f_id) AS len'), new Expression('2 AS n')]);
-
-        $union_sources = DB::table('sources')
-            ->where('s_file', '=', $this->id)
-            ->select(['s_gedcom AS gedcom', 's_id AS xref', new Expression('LENGTH(s_id) AS len'), new Expression('3 AS n')]);
-
-        $union_other = DB::table('other')
-            ->where('o_file', '=', $this->id)
-            ->whereNotIn('o_type', ['HEAD', 'TRLR'])
-            ->select(['o_gedcom AS gedcom', 'o_id AS xref', new Expression('LENGTH(o_id) AS len'), new Expression('4 AS n')]);
-
-        $union_media = DB::table('media')
-            ->where('m_file', '=', $this->id)
-            ->select(['m_gedcom AS gedcom', 'm_id AS xref', new Expression('LENGTH(m_id) AS len'), new Expression('5 AS n')]);
-
-        DB::table('individuals')
-            ->where('i_file', '=', $this->id)
-            ->select(['i_gedcom AS gedcom', 'i_id AS xref', new Expression('LENGTH(i_id) AS len'), new Expression('1 AS n')])
-            ->union($union_families)
-            ->union($union_sources)
-            ->union($union_other)
-            ->union($union_media)
-            ->orderBy('n')
-            ->orderBy('len')
-            ->orderBy('xref')
-            ->chunk(1000, static function (Collection $rows) use ($stream, &$buffer): void {
-                foreach ($rows as $row) {
-                    $buffer .= FunctionsExport::reformatRecord($row->gedcom);
-                    if (strlen($buffer) > 65535) {
-                        fwrite($stream, $buffer);
-                        $buffer = '';
-                    }
-                }
-            });
-
-        fwrite($stream, $buffer . '0 TRLR' . Gedcom::EOL);
+        $gedcom_export_service->export($this, $stream);
     }
 
     /**
@@ -472,20 +441,22 @@ class Tree
      *
      * @param string $gedcom
      *
-     * @return GedcomRecord|Individual|Family|Note|Source|Repository|Media
+     * @return GedcomRecord|Individual|Family|Location|Note|Source|Repository|Media|Submitter|Submission
      * @throws InvalidArgumentException
      */
     public function createRecord(string $gedcom): GedcomRecord
     {
-        if (!Str::startsWith($gedcom, '0 @@ ')) {
+        if (!preg_match('/^0 @@ ([_A-Z]+)/', $gedcom, $match)) {
             throw new InvalidArgumentException('GedcomRecord::createRecord(' . $gedcom . ') does not begin 0 @@');
         }
 
-        $xref   = $this->getNewXref();
-        $gedcom = '0 @' . $xref . '@ ' . Str::after($gedcom, '0 @@ ');
+        $xref   = Registry::xrefFactory()->make($match[1]);
+        $gedcom = substr_replace($gedcom, $xref, 3, 0);
 
         // Create a change record
-        $gedcom .= "\n1 CHAN\n2 DATE " . date('d M Y') . "\n3 TIME " . date('H:i:s') . "\n2 _WT_USER " . Auth::user()->userName();
+        $today = strtoupper(date('d M Y'));
+        $now   = date('H:i:s');
+        $gedcom .= "\n1 CHAN\n2 DATE " . $today . "\n3 TIME " . $now . "\n2 _WT_USER " . Auth::user()->userName();
 
         // Create a pending change
         DB::table('change')->insert([
@@ -497,55 +468,26 @@ class Tree
         ]);
 
         // Accept this pending change
-        if (Auth::user()->getPreference(User::PREF_AUTO_ACCEPT_EDITS)) {
-            $record = new GedcomRecord($xref, $gedcom, null, $this);
-            
+        if (Auth::user()->getPreference(UserInterface::PREF_AUTO_ACCEPT_EDITS) === '1') {
+            $record = Registry::gedcomRecordFactory()->new($xref, $gedcom, null, $this);
+
             app(PendingChangesService::class)->acceptRecord($record);
 
             return $record;
         }
 
-        return GedcomRecord::getInstance($xref, $this, $gedcom);
+        return Registry::gedcomRecordFactory()->new($xref, '', $gedcom, $this);
     }
 
     /**
      * Generate a new XREF, unique across all family trees
      *
      * @return string
+     * @deprecated - use the factory directly.
      */
     public function getNewXref(): string
     {
-        // Lock the row, so that only one new XREF may be generated at a time.
-        DB::table('site_setting')
-            ->where('setting_name', '=', 'next_xref')
-            ->lockForUpdate()
-            ->get();
-
-        $prefix = 'X';
-
-        $increment = 1.0;
-        do {
-            $num = (int) Site::getPreference('next_xref') + (int) $increment;
-
-            // This exponential increment allows us to scan over large blocks of
-            // existing data in a reasonable time.
-            $increment *= 1.01;
-
-            $xref = $prefix . $num;
-
-            // Records may already exist with this sequence number.
-            $already_used =
-                DB::table('individuals')->where('i_id', '=', $xref)->exists() ||
-                DB::table('families')->where('f_id', '=', $xref)->exists() ||
-                DB::table('sources')->where('s_id', '=', $xref)->exists() ||
-                DB::table('media')->where('m_id', '=', $xref)->exists() ||
-                DB::table('other')->where('o_id', '=', $xref)->exists() ||
-                DB::table('change')->where('xref', '=', $xref)->exists();
-        } while ($already_used);
-
-        Site::setPreference('next_xref', (string) $num);
-
-        return $xref;
+        return Registry::xrefFactory()->make(GedcomRecord::RECORD_TYPE);
     }
 
     /**
@@ -558,15 +500,17 @@ class Tree
      */
     public function createFamily(string $gedcom): GedcomRecord
     {
-        if (!Str::startsWith($gedcom, '0 @@ FAM')) {
+        if (!str_starts_with($gedcom, '0 @@ FAM')) {
             throw new InvalidArgumentException('GedcomRecord::createFamily(' . $gedcom . ') does not begin 0 @@ FAM');
         }
 
-        $xref   = $this->getNewXref();
-        $gedcom = '0 @' . $xref . '@ FAM' . Str::after($gedcom, '0 @@ FAM');
+        $xref   = Registry::xrefFactory()->make(Family::RECORD_TYPE);
+        $gedcom = substr_replace($gedcom, $xref, 3, 0);
 
         // Create a change record
-        $gedcom .= "\n1 CHAN\n2 DATE " . date('d M Y') . "\n3 TIME " . date('H:i:s') . "\n2 _WT_USER " . Auth::user()->userName();
+        $today = strtoupper(date('d M Y'));
+        $now   = date('H:i:s');
+        $gedcom .= "\n1 CHAN\n2 DATE " . $today . "\n3 TIME " . $now . "\n2 _WT_USER " . Auth::user()->userName();
 
         // Create a pending change
         DB::table('change')->insert([
@@ -578,15 +522,15 @@ class Tree
         ]);
 
         // Accept this pending change
-        if (Auth::user()->getPreference(User::PREF_AUTO_ACCEPT_EDITS) === '1') {
-            $record = new Family($xref, $gedcom, null, $this);
+        if (Auth::user()->getPreference(UserInterface::PREF_AUTO_ACCEPT_EDITS) === '1') {
+            $record = Registry::familyFactory()->new($xref, $gedcom, null, $this);
 
             app(PendingChangesService::class)->acceptRecord($record);
 
             return $record;
         }
 
-        return new Family($xref, '', $gedcom, $this);
+        return Registry::familyFactory()->new($xref, '', $gedcom, $this);
     }
 
     /**
@@ -599,15 +543,17 @@ class Tree
      */
     public function createIndividual(string $gedcom): GedcomRecord
     {
-        if (!Str::startsWith($gedcom, '0 @@ INDI')) {
+        if (!str_starts_with($gedcom, '0 @@ INDI')) {
             throw new InvalidArgumentException('GedcomRecord::createIndividual(' . $gedcom . ') does not begin 0 @@ INDI');
         }
 
-        $xref   = $this->getNewXref();
-        $gedcom = '0 @' . $xref . '@ INDI' . Str::after($gedcom, '0 @@ INDI');
+        $xref   = Registry::xrefFactory()->make(Individual::RECORD_TYPE);
+        $gedcom = substr_replace($gedcom, $xref, 3, 0);
 
         // Create a change record
-        $gedcom .= "\n1 CHAN\n2 DATE " . date('d M Y') . "\n3 TIME " . date('H:i:s') . "\n2 _WT_USER " . Auth::user()->userName();
+        $today = strtoupper(date('d M Y'));
+        $now   = date('H:i:s');
+        $gedcom .= "\n1 CHAN\n2 DATE " . $today . "\n3 TIME " . $now . "\n2 _WT_USER " . Auth::user()->userName();
 
         // Create a pending change
         DB::table('change')->insert([
@@ -619,15 +565,15 @@ class Tree
         ]);
 
         // Accept this pending change
-        if (Auth::user()->getPreference(User::PREF_AUTO_ACCEPT_EDITS) === '1') {
-            $record = new Individual($xref, $gedcom, null, $this);
+        if (Auth::user()->getPreference(UserInterface::PREF_AUTO_ACCEPT_EDITS) === '1') {
+            $record = Registry::individualFactory()->new($xref, $gedcom, null, $this);
 
             app(PendingChangesService::class)->acceptRecord($record);
 
             return $record;
         }
 
-        return new Individual($xref, '', $gedcom, $this);
+        return Registry::individualFactory()->new($xref, '', $gedcom, $this);
     }
 
     /**
@@ -640,15 +586,17 @@ class Tree
      */
     public function createMediaObject(string $gedcom): Media
     {
-        if (!Str::startsWith($gedcom, '0 @@ OBJE')) {
+        if (!str_starts_with($gedcom, '0 @@ OBJE')) {
             throw new InvalidArgumentException('GedcomRecord::createIndividual(' . $gedcom . ') does not begin 0 @@ OBJE');
         }
 
-        $xref   = $this->getNewXref();
-        $gedcom = '0 @' . $xref . '@ OBJE' . Str::after($gedcom, '0 @@ OBJE');
+        $xref   = Registry::xrefFactory()->make(Media::RECORD_TYPE);
+        $gedcom = substr_replace($gedcom, $xref, 3, 0);
 
         // Create a change record
-        $gedcom .= "\n1 CHAN\n2 DATE " . date('d M Y') . "\n3 TIME " . date('H:i:s') . "\n2 _WT_USER " . Auth::user()->userName();
+        $today = strtoupper(date('d M Y'));
+        $now   = date('H:i:s');
+        $gedcom .= "\n1 CHAN\n2 DATE " . $today . "\n3 TIME " . $now . "\n2 _WT_USER " . Auth::user()->userName();
 
         // Create a pending change
         DB::table('change')->insert([
@@ -660,15 +608,15 @@ class Tree
         ]);
 
         // Accept this pending change
-        if (Auth::user()->getPreference(User::PREF_AUTO_ACCEPT_EDITS) === '1') {
-            $record = new Media($xref, $gedcom, null, $this);
+        if (Auth::user()->getPreference(UserInterface::PREF_AUTO_ACCEPT_EDITS) === '1') {
+            $record = Registry::mediaFactory()->new($xref, $gedcom, null, $this);
 
             app(PendingChangesService::class)->acceptRecord($record);
 
             return $record;
         }
 
-        return new Media($xref, '', $gedcom, $this);
+        return Registry::mediaFactory()->new($xref, '', $gedcom, $this);
     }
 
     /**
@@ -684,10 +632,10 @@ class Tree
         if ($xref === '') {
             $individual = null;
         } else {
-            $individual = Individual::getInstance($xref, $this);
+            $individual = Registry::individualFactory()->make($xref, $this);
 
             if ($individual === null) {
-                $family = Family::getInstance($xref, $this);
+                $family = Registry::familyFactory()->make($xref, $this);
 
                 if ($family instanceof Family) {
                     $individual = $family->spouses()->first() ?? $family->children()->first();
@@ -695,27 +643,27 @@ class Tree
             }
         }
 
-        if ($this->getUserPreference($user, User::PREF_TREE_DEFAULT_XREF) !== '') {
-            $individual = Individual::getInstance($this->getUserPreference($user, User::PREF_TREE_DEFAULT_XREF), $this);
+        if ($individual === null && $this->getUserPreference($user, UserInterface::PREF_TREE_DEFAULT_XREF) !== '') {
+            $individual = Registry::individualFactory()->make($this->getUserPreference($user, UserInterface::PREF_TREE_DEFAULT_XREF), $this);
         }
 
-        if ($individual === null && $this->getUserPreference($user, User::PREF_TREE_ACCOUNT_XREF) !== '') {
-            $individual = Individual::getInstance($this->getUserPreference($user, User::PREF_TREE_ACCOUNT_XREF), $this);
+        if ($individual === null && $this->getUserPreference($user, UserInterface::PREF_TREE_ACCOUNT_XREF) !== '') {
+            $individual = Registry::individualFactory()->make($this->getUserPreference($user, UserInterface::PREF_TREE_ACCOUNT_XREF), $this);
         }
 
         if ($individual === null && $this->getPreference('PEDIGREE_ROOT_ID') !== '') {
-            $individual = Individual::getInstance($this->getPreference('PEDIGREE_ROOT_ID'), $this);
+            $individual = Registry::individualFactory()->make($this->getPreference('PEDIGREE_ROOT_ID'), $this);
         }
         if ($individual === null) {
             $xref = (string) DB::table('individuals')
                 ->where('i_file', '=', $this->id())
                 ->min('i_id');
 
-            $individual = Individual::getInstance($xref, $this);
+            $individual = Registry::individualFactory()->make($xref, $this);
         }
         if ($individual === null) {
             // always return a record
-            $individual = new Individual('I', '0 @I@ INDI', null, $this);
+            $individual = Registry::individualFactory()->new('I', '0 @I@ INDI', null, $this);
         }
 
         return $individual;

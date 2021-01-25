@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -27,6 +27,8 @@ use Fisharebest\Webtrees\Module\MediaListModule;
 use Fisharebest\Webtrees\Module\ModuleAnalyticsInterface;
 use Fisharebest\Webtrees\Module\ModuleBlockInterface;
 use Fisharebest\Webtrees\Module\ModuleChartInterface;
+use Fisharebest\Webtrees\Module\ModuleCustomInterface;
+use Fisharebest\Webtrees\Module\ModuleDataFixInterface;
 use Fisharebest\Webtrees\Module\ModuleFooterInterface;
 use Fisharebest\Webtrees\Module\ModuleHistoricEventsInterface;
 use Fisharebest\Webtrees\Module\ModuleLanguageInterface;
@@ -41,7 +43,9 @@ use Fisharebest\Webtrees\Module\RepositoryListModule;
 use Fisharebest\Webtrees\Module\SourceListModule;
 use Fisharebest\Webtrees\Module\SubmitterListModule;
 use Fisharebest\Webtrees\Note;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Repository;
+use Fisharebest\Webtrees\Services\AdminService;
 use Fisharebest\Webtrees\Services\HousekeepingService;
 use Fisharebest\Webtrees\Services\ModuleService;
 use Fisharebest\Webtrees\Services\ServerCheckService;
@@ -67,6 +71,9 @@ class ControlPanel implements RequestHandlerInterface
 {
     use ViewResponseTrait;
 
+    /** @var AdminService */
+    private $admin_service;
+
     /** @var ModuleService */
     private $module_service;
 
@@ -88,6 +95,7 @@ class ControlPanel implements RequestHandlerInterface
     /**
      * ControlPanel constructor.
      *
+     * @param AdminService        $admin_service
      * @param HousekeepingService $housekeeping_service
      * @param ModuleService       $module_service
      * @param ServerCheckService  $server_check_service
@@ -96,6 +104,7 @@ class ControlPanel implements RequestHandlerInterface
      * @param UserService         $user_service
      */
     public function __construct(
+        AdminService $admin_service,
         HousekeepingService $housekeeping_service,
         ModuleService $module_service,
         ServerCheckService $server_check_service,
@@ -103,8 +112,9 @@ class ControlPanel implements RequestHandlerInterface
         UpgradeService $upgrade_service,
         UserService $user_service
     ) {
-        $this->module_service       = $module_service;
+        $this->admin_service        = $admin_service;
         $this->housekeeping_service = $housekeeping_service;
+        $this->module_service       = $module_service;
         $this->server_check_service = $server_check_service;
         $this->tree_service         = $tree_service;
         $this->upgrade_service      = $upgrade_service;
@@ -122,6 +132,15 @@ class ControlPanel implements RequestHandlerInterface
 
         $filesystem      = new Filesystem(new Local(Webtrees::ROOT_DIR));
         $files_to_delete = $this->housekeeping_service->deleteOldWebtreesFiles($filesystem);
+
+        $custom_updates = $this->module_service
+            ->findByInterface(ModuleCustomInterface::class)
+            ->filter(static function (ModuleCustomInterface $module): bool {
+                return version_compare($module->customModuleLatestVersion(), $module->customModuleVersion()) > 0;
+            });
+
+        $multiple_tree_threshold = $this->admin_service->multipleTreeThreshold();
+        $gedcom_file_count       = $this->admin_service->gedcomFiles(Registry::filesystem()->data())->count();
 
         return $this->viewResponse('admin/control-panel', [
             'title'                      => I18N::translate('Control panel'),
@@ -160,6 +179,9 @@ class ControlPanel implements RequestHandlerInterface
             'block_modules_enabled'      => $this->module_service->findByInterface(ModuleBlockInterface::class),
             'chart_modules_disabled'     => $this->module_service->findByInterface(ModuleChartInterface::class, true),
             'chart_modules_enabled'      => $this->module_service->findByInterface(ModuleChartInterface::class),
+            'custom_updates'             => $custom_updates,
+            'data_fix_modules_disabled'  => $this->module_service->findByInterface(ModuleDataFixInterface::class, true),
+            'data_fix_modules_enabled'   => $this->module_service->findByInterface(ModuleDataFixInterface::class),
             'other_modules'              => $this->module_service->otherModules(true),
             'footer_modules_disabled'    => $this->module_service->findByInterface(ModuleFooterInterface::class, true),
             'footer_modules_enabled'     => $this->module_service->findByInterface(ModuleFooterInterface::class),
@@ -179,6 +201,7 @@ class ControlPanel implements RequestHandlerInterface
             'tab_modules_enabled'        => $this->module_service->findByInterface(ModuleTabInterface::class),
             'theme_modules_disabled'     => $this->module_service->findByInterface(ModuleThemeInterface::class, true),
             'theme_modules_enabled'      => $this->module_service->findByInterface(ModuleThemeInterface::class),
+            'show_synchronize'           => $gedcom_file_count >= $multiple_tree_threshold,
         ]);
     }
 
@@ -196,7 +219,7 @@ class ControlPanel implements RequestHandlerInterface
                     ->where('change.status', '=', 'pending');
             })
             ->groupBy(['gedcom.gedcom_id'])
-            ->pluck(new Expression('COUNT(change_id)'), 'gedcom.gedcom_id')
+            ->pluck(new Expression('COUNT(change_id) AS aggregate'), 'gedcom.gedcom_id')
             ->all();
     }
 
@@ -210,7 +233,7 @@ class ControlPanel implements RequestHandlerInterface
         return DB::table('gedcom')
             ->leftJoin('individuals', 'i_file', '=', 'gedcom_id')
             ->groupBy(['gedcom_id'])
-            ->pluck(new Expression('COUNT(i_id)'), 'gedcom_id')
+            ->pluck(new Expression('COUNT(i_id) AS aggregate'), 'gedcom_id')
             ->map(static function (string $count) {
                 return (int) $count;
             });
@@ -226,7 +249,7 @@ class ControlPanel implements RequestHandlerInterface
         return DB::table('gedcom')
             ->leftJoin('families', 'f_file', '=', 'gedcom_id')
             ->groupBy(['gedcom_id'])
-            ->pluck(new Expression('COUNT(f_id)'), 'gedcom_id')
+            ->pluck(new Expression('COUNT(f_id) AS aggregate'), 'gedcom_id')
             ->map(static function (string $count) {
                 return (int) $count;
             });
@@ -242,7 +265,7 @@ class ControlPanel implements RequestHandlerInterface
         return DB::table('gedcom')
             ->leftJoin('sources', 's_file', '=', 'gedcom_id')
             ->groupBy(['gedcom_id'])
-            ->pluck(new Expression('COUNT(s_id)'), 'gedcom_id')
+            ->pluck(new Expression('COUNT(s_id) AS aggregate'), 'gedcom_id')
             ->map(static function (string $count) {
                 return (int) $count;
             });
@@ -258,7 +281,7 @@ class ControlPanel implements RequestHandlerInterface
         return DB::table('gedcom')
             ->leftJoin('media', 'm_file', '=', 'gedcom_id')
             ->groupBy(['gedcom_id'])
-            ->pluck(new Expression('COUNT(m_id)'), 'gedcom_id')
+            ->pluck(new Expression('COUNT(m_id) AS aggregate'), 'gedcom_id')
             ->map(static function (string $count) {
                 return (int) $count;
             });
@@ -278,7 +301,7 @@ class ControlPanel implements RequestHandlerInterface
                     ->where('o_type', '=', Repository::RECORD_TYPE);
             })
             ->groupBy(['gedcom_id'])
-            ->pluck(new Expression('COUNT(o_id)'), 'gedcom_id')
+            ->pluck(new Expression('COUNT(o_id) AS aggregate'), 'gedcom_id')
             ->map(static function (string $count) {
                 return (int) $count;
             });
@@ -298,7 +321,7 @@ class ControlPanel implements RequestHandlerInterface
                     ->where('o_type', '=', Note::RECORD_TYPE);
             })
             ->groupBy(['gedcom_id'])
-            ->pluck(new Expression('COUNT(o_id)'), 'gedcom_id')
+            ->pluck(new Expression('COUNT(o_id) AS aggregate'), 'gedcom_id')
             ->map(static function (string $count) {
                 return (int) $count;
             });
@@ -318,7 +341,7 @@ class ControlPanel implements RequestHandlerInterface
                     ->where('o_type', '=', Submitter::RECORD_TYPE);
             })
             ->groupBy(['gedcom_id'])
-            ->pluck(new Expression('COUNT(o_id)'), 'gedcom_id')
+            ->pluck(new Expression('COUNT(o_id) AS aggregate'), 'gedcom_id')
             ->map(static function (string $count) {
                 return (int) $count;
             });

@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -25,6 +25,7 @@ use Fisharebest\ExtCalendar\GregorianCalendar;
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\ColorGenerator;
 use Fisharebest\Webtrees\Date;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Place;
@@ -38,6 +39,8 @@ use stdClass;
 
 use function app;
 use function assert;
+use function explode;
+use function implode;
 
 /**
  * Class LifespansChartModule
@@ -46,8 +49,11 @@ class LifespansChartModule extends AbstractModule implements ModuleChartInterfac
 {
     use ModuleChartTrait;
 
-    private const ROUTE_NAME = 'lifespans-chart';
-    private const ROUTE_URL  = '/tree/{tree}/lifespans';
+    protected const ROUTE_URL = '/tree/{tree}/lifespans';
+
+    // In theory, only "@" is a safe separator, but it gives longer and uglier URLs.
+    // Unless some other application generates XREFs with a ".", we are safe.
+    protected const SEPARATOR = '.';
 
     // Defaults
     protected const DEFAULT_PARAMETERS = [];
@@ -69,7 +75,7 @@ class LifespansChartModule extends AbstractModule implements ModuleChartInterfac
         assert($router_container instanceof RouterContainer);
 
         $router_container->getMap()
-            ->get(self::ROUTE_NAME, self::ROUTE_URL, $this)
+            ->get(static::class, static::ROUTE_URL, $this)
             ->allows(RequestMethodInterface::METHOD_POST);
     }
 
@@ -115,9 +121,9 @@ class LifespansChartModule extends AbstractModule implements ModuleChartInterfac
      */
     public function chartUrl(Individual $individual, array $parameters = []): string
     {
-        return route(self::ROUTE_NAME, [
+        return route(static::class, [
                 'tree'  => $individual->tree()->name(),
-                'xrefs' => [$individual->xref()],
+                'xrefs' => $individual->xref(),
             ] + $parameters + self::DEFAULT_PARAMETERS);
     }
 
@@ -135,6 +141,11 @@ class LifespansChartModule extends AbstractModule implements ModuleChartInterfac
         $xrefs     = $request->getQueryParams()['xrefs'] ?? [];
         $ajax      = $request->getQueryParams()['ajax'] ?? '';
 
+        // URLs created by older versions may already contain an array.
+        if (!is_array($xrefs)) {
+            $xrefs = explode(self::SEPARATOR, $xrefs);
+        }
+
         $params = (array) $request->getParsedBody();
 
         $addxref   = $params['addxref'] ?? '';
@@ -150,7 +161,7 @@ class LifespansChartModule extends AbstractModule implements ModuleChartInterfac
         $xrefs = array_unique($xrefs);
 
         // Add an individual, and family members
-        $individual = Individual::getInstance($addxref, $tree);
+        $individual = Registry::individualFactory()->make($addxref, $tree);
         if ($individual !== null) {
             $xrefs[] = $addxref;
             if ($addfam) {
@@ -172,20 +183,20 @@ class LifespansChartModule extends AbstractModule implements ModuleChartInterfac
         // Filter duplicates and private individuals.
         $xrefs = array_unique($xrefs);
         $xrefs = array_filter($xrefs, static function (string $xref) use ($tree): bool {
-            $individual = Individual::getInstance($xref, $tree);
+            $individual = Registry::individualFactory()->make($xref, $tree);
 
             return $individual !== null && $individual->canShow();
         });
 
         // Convert POST requests into GET requests for pretty URLs.
         if ($request->getMethod() === RequestMethodInterface::METHOD_POST) {
-            return redirect(route(self::ROUTE_NAME, [
+            return redirect(route(static::class, [
                 'tree'  => $tree->name(),
-                'xrefs' => $xrefs,
+                'xrefs' => implode(self::SEPARATOR, $xrefs),
             ]));
         }
 
-        Auth::checkComponentAccess($this, 'chart', $tree, $user);
+        Auth::checkComponentAccess($this, ModuleChartInterface::class, $tree, $user);
 
         if ($ajax === '1') {
             $this->layout = 'layouts/ajax';
@@ -193,12 +204,12 @@ class LifespansChartModule extends AbstractModule implements ModuleChartInterfac
             return $this->chart($tree, $xrefs);
         }
 
-        $reset_url = route(self::ROUTE_NAME, ['tree' => $tree->name()]);
+        $reset_url = route(static::class, ['tree' => $tree->name()]);
 
-        $ajax_url = route(self::ROUTE_NAME, [
+        $ajax_url = route(static::class, [
             'ajax'  => true,
             'tree'  => $tree->name(),
-            'xrefs' => $xrefs,
+            'xrefs' => implode(self::SEPARATOR, $xrefs),
         ]);
 
         return $this->viewResponse('modules/lifespans-chart/page', [
@@ -221,7 +232,7 @@ class LifespansChartModule extends AbstractModule implements ModuleChartInterfac
     {
         /** @var Individual[] $individuals */
         $individuals = array_map(static function (string $xref) use ($tree): ?Individual {
-            return Individual::getInstance($xref, $tree);
+            return Registry::individualFactory()->make($xref, $tree);
         }, $xrefs);
 
         $individuals = array_filter($individuals, static function (?Individual $individual): bool {
@@ -243,7 +254,7 @@ class LifespansChartModule extends AbstractModule implements ModuleChartInterfac
 
         $count    = count($xrefs);
         $subtitle = I18N::plural('%s individual', '%s individuals', $count, I18N::number($count));
-        
+
         $html = view('modules/lifespans-chart/chart', [
             'dir'        => I18N::direction(),
             'end_year'   => $end_year,

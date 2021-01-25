@@ -24,6 +24,7 @@ use Fisharebest\Webtrees\Contracts\UserInterface;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Log;
 use Fisharebest\Webtrees\Site;
+use Psr\Http\Message\ServerRequestInterface;
 use Swift_Mailer;
 use Swift_Message;
 use Swift_NullTransport;
@@ -33,6 +34,8 @@ use Swift_SmtpTransport;
 use Swift_Transport;
 use Throwable;
 
+use function assert;
+use function checkdnsrr;
 use function filter_var;
 use function function_exists;
 use function gethostbyaddr;
@@ -73,35 +76,35 @@ class EmailService
         $from_email     = $from->email() ?: $this->senderEmail();
         $reply_to_email = $reply_to->email() ?: $this->senderEmail();
 
-        $message = (new Swift_Message())
-            ->setSubject($subject)
-            ->setFrom($from_email, $from->realName())
-            ->setTo($to->email(), $to->realName())
-            ->setBody($message_html, 'text/html');
-
-        if ($from_email !== $reply_to_email) {
-            $message->setReplyTo($reply_to_email, $reply_to->realName());
-        }
-
-        $dkim_domain   = Site::getPreference('DKIM_DOMAIN');
-        $dkim_selector = Site::getPreference('DKIM_SELECTOR');
-        $dkim_key      = Site::getPreference('DKIM_KEY');
-
-        if ($dkim_domain !== '' && $dkim_selector !== '' && $dkim_key !== '') {
-            $signer = new Swift_Signers_DKIMSigner($dkim_key, $dkim_domain, $dkim_selector);
-            $signer
-                ->setHeaderCanon('relaxed')
-                ->setBodyCanon('relaxed');
-
-            $message->attachSigner($signer);
-        } else {
-            // DKIM body hashes don't work with multipart/alternative content.
-            $message->addPart($message_text, 'text/plain');
-        }
-
-        $mailer = new Swift_Mailer($this->transport());
-
         try {
+            $message = (new Swift_Message())
+                ->setSubject($subject)
+                ->setFrom($from_email, $from->realName())
+                ->setTo($to->email(), $to->realName())
+                ->setBody($message_html, 'text/html');
+
+            if ($from_email !== $reply_to_email) {
+                $message->setReplyTo($reply_to_email, $reply_to->realName());
+            }
+
+            $dkim_domain   = Site::getPreference('DKIM_DOMAIN');
+            $dkim_selector = Site::getPreference('DKIM_SELECTOR');
+            $dkim_key      = Site::getPreference('DKIM_KEY');
+
+            if ($dkim_domain !== '' && $dkim_selector !== '' && $dkim_key !== '') {
+                $signer = new Swift_Signers_DKIMSigner($dkim_key, $dkim_domain, $dkim_selector);
+                $signer
+                    ->setHeaderCanon('relaxed')
+                    ->setBodyCanon('relaxed');
+
+                $message->attachSigner($signer);
+            } else {
+                // DKIM body hashes don't work with multipart/alternative content.
+                $message->addPart($message_text, 'text/plain');
+            }
+
+            $mailer = new Swift_Mailer($this->transport());
+
             $mailer->send($message);
         } catch (Exception $ex) {
             Log::addErrorLog('MailService: ' . $ex->getMessage());
@@ -122,7 +125,12 @@ class EmailService
         switch (Site::getPreference('SMTP_ACTIVE')) {
             case 'sendmail':
                 // Local sendmail (requires PHP proc_* functions)
-                return new Swift_SendmailTransport();
+                $request = app(ServerRequestInterface::class);
+                assert($request instanceof ServerRequestInterface);
+
+                $sendmail_command = $request->getAttribute('sendmail_command', '/usr/sbin/sendmail -bs');
+
+                return new Swift_SendmailTransport($sendmail_command);
 
             case 'external':
                 // SMTP
@@ -206,6 +214,11 @@ class EmailService
 
         $email_valid  = filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
         $domain_valid = filter_var($domain, FILTER_VALIDATE_DOMAIN) !== false;
+
+        // Some web hosts disable checkdnsrr.
+        if ($domain_valid && function_exists('checkdnsrr')) {
+            $domain_valid = checkdnsrr($domain);
+        }
 
         return $email_valid && $domain_valid;
     }

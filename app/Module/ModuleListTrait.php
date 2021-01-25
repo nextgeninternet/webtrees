@@ -28,16 +28,6 @@ use Fisharebest\Webtrees\Tree;
 trait ModuleListTrait
 {
     /**
-     * @return string
-     */
-    abstract public function name(): string;
-
-    /**
-     * @return string
-     */
-    abstract public function title(): string;
-
-    /**
      * A main menu item for this list, or null if the list is empty.
      *
      * @param Tree $tree
@@ -49,7 +39,7 @@ trait ModuleListTrait
         if ($this->listIsEmpty($tree)) {
             return null;
         }
-        
+
         return new Menu(
             $this->listTitle(),
             $this->listUrl($tree),

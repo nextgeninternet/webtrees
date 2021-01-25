@@ -1,15 +1,30 @@
-<?php if ($record::RECORD_TYPE === 'INDI') : ?>
+<?php
+
+use Fisharebest\Webtrees\Family;
+use Fisharebest\Webtrees\GedcomRecord;
+use Fisharebest\Webtrees\Individual;
+use Fisharebest\Webtrees\Media;
+use Fisharebest\Webtrees\Note;
+use Fisharebest\Webtrees\Repository;
+use Fisharebest\Webtrees\Source;
+use Fisharebest\Webtrees\Submitter;
+
+/**
+ * @var GedcomRecord $record
+ */
+?>
+<?php if ($record->tag() === Individual::RECORD_TYPE) : ?>
     <?= view('icons/individual') ?>
-<?php elseif ($record::RECORD_TYPE === 'FAM') : ?>
+<?php elseif ($record->tag() === Family::RECORD_TYPE) : ?>
     <?= view('icons/family') ?>
-<?php elseif ($record::RECORD_TYPE === 'SOUR') : ?>
+<?php elseif ($record->tag() === Source::RECORD_TYPE) : ?>
     <?= view('icons/source') ?>
-<?php elseif ($record::RECORD_TYPE === 'REPO') : ?>
+<?php elseif ($record->tag() === Repository::RECORD_TYPE) : ?>
     <?= view('icons/repository') ?>
-<?php elseif ($record::RECORD_TYPE === 'NOTE') : ?>
+<?php elseif ($record->tag() === Note::RECORD_TYPE) : ?>
     <?= view('icons/note') ?>
-<?php elseif ($record::RECORD_TYPE === 'OBJE') : ?>
+<?php elseif ($record->tag() === Media::RECORD_TYPE) : ?>
     <?= view('icons/media') ?>
-<?php elseif ($record::RECORD_TYPE === 'SUBM') : ?>
+<?php elseif ($record->tag() === Submitter::RECORD_TYPE) : ?>
     <?= view('icons/submitter') ?>
 <?php endif;

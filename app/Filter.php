@@ -25,11 +25,9 @@ use League\CommonMark\Block\Element\Document;
 use League\CommonMark\Block\Element\Paragraph;
 use League\CommonMark\Block\Renderer\DocumentRenderer;
 use League\CommonMark\Block\Renderer\ParagraphRenderer;
-use League\CommonMark\Converter;
-use League\CommonMark\DocParser;
+use League\CommonMark\CommonMarkConverter;
 use League\CommonMark\Environment;
-use League\CommonMark\Ext\Table\TableExtension;
-use League\CommonMark\HtmlRenderer;
+use League\CommonMark\Extension\Table\TableExtension;
 use League\CommonMark\Inline\Element\Link;
 use League\CommonMark\Inline\Element\Text;
 use League\CommonMark\Inline\Parser\AutolinkParser;
@@ -81,26 +79,15 @@ class Filter
 
         // Create a minimal commonmark processor - just add support for autolinks.
         $environment = new Environment();
-        $environment->mergeConfig([
-            'renderer'           => [
-                'block_separator' => "\n",
-                'inner_separator' => "\n",
-                'soft_break'      => "\n",
-            ],
-            'html_input'         => Environment::HTML_INPUT_ESCAPE,
-            'allow_unsafe_links' => true,
-        ]);
-
         $environment
             ->addBlockRenderer(Document::class, new DocumentRenderer())
             ->addBlockRenderer(Paragraph::class, new ParagraphRenderer())
             ->addInlineRenderer(Text::class, new TextRenderer())
             ->addInlineRenderer(Link::class, new LinkRenderer())
             ->addInlineParser(new AutolinkParser())
-            ->addExtension(new CensusTableExtension())
             ->addExtension(new XrefExtension($tree));
 
-        $converter = new Converter(new DocParser($environment), new HtmlRenderer($environment));
+        $converter = new CommonMarkConverter(['html_input' => Environment::HTML_INPUT_ESCAPE], $environment);
 
         return $converter->convertToHtml($text);
     }
@@ -116,13 +103,16 @@ class Filter
     public static function markdown(string $text, Tree $tree): string
     {
         $environment = Environment::createCommonMarkEnvironment();
-        $environment->mergeConfig(['html_input' => Environment::HTML_INPUT_ESCAPE]);
-        $environment
-            ->addExtension(new TableExtension())
-            ->addExtension(new CensusTableExtension())
-            ->addExtension(new XrefExtension($tree));
+        $environment->addExtension(new TableExtension());
+        $environment->addExtension(new CensusTableExtension());
+        $environment->addExtension(new XrefExtension($tree));
 
-        $converter = new Converter(new DocParser($environment), new HtmlRenderer($environment));
+        $config = [
+            'allow_unsafe_links' => false,
+            'html_input'         => Environment::HTML_INPUT_ESCAPE,
+        ];
+
+        $converter = new CommonMarkConverter($config, $environment);
 
         return $converter->convertToHtml($text);
     }

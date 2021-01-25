@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -24,16 +24,36 @@ use Fisharebest\Webtrees\Fact;
 use Fisharebest\Webtrees\Family;
 use Fisharebest\Webtrees\Gedcom;
 use Fisharebest\Webtrees\GedcomRecord;
+use Fisharebest\Webtrees\Header;
 use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Media;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Source;
 use Fisharebest\Webtrees\Tree;
 use Fisharebest\Webtrees\Webtrees;
 use Illuminate\Database\Capsule\Manager as DB;
 use Illuminate\Support\Collection;
 
+use function date;
+use function explode;
+use function fwrite;
+use function pathinfo;
+use function preg_match;
+use function preg_replace;
+use function preg_split;
+use function str_contains;
+use function str_replace;
+use function strpos;
+use function strtolower;
+use function strtoupper;
+
+use const PATHINFO_EXTENSION;
+use const PREG_SPLIT_NO_EMPTY;
+
 /**
  * Class FunctionsExport - common functions
+ *
+ * @deprecated since 2.0.5.  Will be removed in 2.1.0
  */
 class FunctionsExport
 {
@@ -87,29 +107,42 @@ class FunctionsExport
      */
     public static function gedcomHeader(Tree $tree, string $char): string
     {
+        // Force a ".ged" suffix
+        $filename = $tree->name();
+
+        if (strtolower(pathinfo($filename, PATHINFO_EXTENSION)) !== 'ged') {
+            $filename .= '.ged';
+        }
+
+        $today = strtoupper(date('d M Y'));
+        $now   = date('H:i:s');
+
         // Default values for a new header
         $HEAD = '0 HEAD';
         $SOUR = "\n1 SOUR " . Webtrees::NAME . "\n2 NAME " . Webtrees::NAME . "\n2 VERS " . Webtrees::VERSION;
         $DEST = "\n1 DEST DISKETTE";
-        $DATE = "\n1 DATE " . strtoupper(date('d M Y')) . "\n2 TIME " . date('H:i:s');
+        $DATE = "\n1 DATE " . $today . "\n2 TIME " . $now;
         $GEDC = "\n1 GEDC\n2 VERS 5.5.1\n2 FORM Lineage-Linked";
         $CHAR = "\n1 CHAR " . $char;
-        $FILE = "\n1 FILE " . $tree->name();
+        $FILE = "\n1 FILE " . $filename;
         $COPR = '';
         $LANG = '';
-        $SUBN = '';
-        $SUBM = "\n1 SUBM @SUBM@\n0 @SUBM@ SUBM\n1 NAME " . Auth::user()->userName(); // The SUBM record is mandatory
 
         // Preserve some values from the original header
-        $record = GedcomRecord::getInstance('HEAD', $tree) ?? new GedcomRecord('HEAD', '0 HEAD', null, $tree);
-        $fact   = $record->facts(['COPR'])->first();
+        $header = Registry::headerFactory()->make('HEAD', $tree) ?? Registry::headerFactory()->new('HEAD', '0 HEAD', null, $tree);
+
+        $fact   = $header->facts(['COPR'])->first();
+
         if ($fact instanceof Fact) {
             $COPR = "\n1 COPR " . $fact->value();
         }
-        $fact = $record->facts(['LANG'])->first();
+
+        $fact = $header->facts(['LANG'])->first();
+
         if ($fact instanceof Fact) {
             $LANG = "\n1 LANG " . $fact->value();
         }
+
         // Link to actual SUBM/SUBN records, if they exist
         $subn = DB::table('other')
             ->where('o_type', '=', 'SUBN')
@@ -117,16 +150,24 @@ class FunctionsExport
             ->value('o_id');
         if ($subn !== null) {
             $SUBN = "\n1 SUBN @{$subn}@";
+        } else {
+            $SUBN = '';
         }
+
         $subm = DB::table('other')
             ->where('o_type', '=', 'SUBM')
             ->where('o_file', '=', $tree->id())
             ->value('o_id');
         if ($subm !== null) {
-            $SUBM = "\n1 SUBM @{$subm}@";
+            $SUBM          = "\n1 SUBM @{$subm}@";
+            $new_submitter = '';
+        } else {
+            // The SUBM record is mandatory
+            $SUBM          = "\n1 SUBM @SUBM@";
+            $new_submitter = "\n0 @SUBM@ SUBM\n1 NAME " . Auth::user()->userName(); // The SUBM record is mandatory
         }
 
-        return $HEAD . $SOUR . $DEST . $DATE . $SUBM . $SUBN . $FILE . $COPR . $GEDC . $CHAR . $LANG . "\n";
+        return $HEAD . $SOUR . $DEST . $DATE . $SUBM . $SUBN . $FILE . $COPR . $GEDC . $CHAR . $LANG . $new_submitter . "\n";
     }
 
     /**
@@ -142,15 +183,15 @@ class FunctionsExport
         if ($path && preg_match('/\n1 FILE (.+)/', $rec, $match)) {
             $old_file_name = $match[1];
             // Don’t modify external links
-            if (strpos($old_file_name, '://') === false) {
+            if (!str_contains($old_file_name, '://')) {
                 // Adding a windows path? Convert the slashes.
-                if (strpos($path, '\\') !== false) {
+                if (str_contains($path, '\\')) {
                     $new_file_name = preg_replace('~/+~', '\\', $old_file_name);
                 } else {
                     $new_file_name = $old_file_name;
                 }
                 // Path not present - add it.
-                if (strpos($new_file_name, $path) === false) {
+                if (!str_contains($new_file_name, $path)) {
                     $new_file_name = $path . $new_file_name;
                 }
                 $rec = str_replace("\n1 FILE " . $old_file_name, "\n1 FILE " . $new_file_name, $rec);
@@ -175,13 +216,13 @@ class FunctionsExport
     {
         $header = new Collection([self::gedcomHeader($tree, $encoding)]);
 
-        // Generate the OBJE/SOUR/REPO/NOTE records first, as their privacy calcualations involve
+        // Generate the OBJE/SOUR/REPO/NOTE records first, as their privacy calculations involve
         // database queries, and we wish to avoid large gaps between queries due to MySQL connection timeouts.
         $media = DB::table('media')
             ->where('m_file', '=', $tree->id())
             ->orderBy('m_id')
             ->get()
-            ->map(Media::rowMapper($tree))
+            ->map(Registry::mediaFactory()->mapper($tree))
             ->map(static function (Media $record) use ($access_level): string {
                 return $record->privatizeGedcom($access_level);
             })
@@ -193,17 +234,17 @@ class FunctionsExport
             ->where('s_file', '=', $tree->id())
             ->orderBy('s_id')
             ->get()
-            ->map(Source::rowMapper($tree))
+            ->map(Registry::sourceFactory()->mapper($tree))
             ->map(static function (Source $record) use ($access_level): string {
                 return $record->privatizeGedcom($access_level);
             });
 
         $other = DB::table('other')
             ->where('o_file', '=', $tree->id())
-            ->whereNotIn('o_type', ['HEAD', 'TRLR'])
+            ->whereNotIn('o_type', [Header::RECORD_TYPE, 'TRLR'])
             ->orderBy('o_id')
             ->get()
-            ->map(GedcomRecord::rowMapper($tree))
+            ->map(Registry::gedcomRecordFactory()->mapper($tree))
             ->map(static function (GedcomRecord $record) use ($access_level): string {
                 return $record->privatizeGedcom($access_level);
             });
@@ -212,7 +253,7 @@ class FunctionsExport
             ->where('i_file', '=', $tree->id())
             ->orderBy('i_id')
             ->get()
-            ->map(Individual::rowMapper($tree))
+            ->map(Registry::individualFactory()->mapper($tree))
             ->map(static function (Individual $record) use ($access_level): string {
                 return $record->privatizeGedcom($access_level);
             });
@@ -221,7 +262,7 @@ class FunctionsExport
             ->where('f_file', '=', $tree->id())
             ->orderBy('f_id')
             ->get()
-            ->map(Family::rowMapper($tree))
+            ->map(Registry::familyFactory()->mapper($tree))
             ->map(static function (Family $record) use ($access_level): string {
                 return $record->privatizeGedcom($access_level);
             });

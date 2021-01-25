@@ -23,11 +23,13 @@ use Fisharebest\Webtrees\FlashMessages;
 use Fisharebest\Webtrees\Html;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Registry;
+use Fisharebest\Webtrees\Services\GedcomExportService;
 use Fisharebest\Webtrees\Tree;
-use League\Flysystem\FilesystemInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use RuntimeException;
 use Throwable;
 
 use function assert;
@@ -48,6 +50,19 @@ class ExportGedcomServer implements RequestHandlerInterface
 {
     use ViewResponseTrait;
 
+    /** @var GedcomExportService */
+    private $gedcom_export_service;
+
+    /**
+     * ExportGedcomServer constructor.
+     *
+     * @param GedcomExportService $gedcom_export_service
+     */
+    public function __construct(GedcomExportService $gedcom_export_service)
+    {
+        $this->gedcom_export_service = $gedcom_export_service;
+    }
+
     /**
      * @param ServerRequestInterface $request
      *
@@ -58,8 +73,7 @@ class ExportGedcomServer implements RequestHandlerInterface
         $tree = $request->getAttribute('tree');
         assert($tree instanceof Tree);
 
-        $data_filesystem = $request->getAttribute('filesystem.data');
-        assert($data_filesystem instanceof FilesystemInterface);
+        $data_filesystem = Registry::filesystem()->data();
 
         $filename = $tree->name();
 
@@ -70,7 +84,12 @@ class ExportGedcomServer implements RequestHandlerInterface
 
         try {
             $stream = fopen('php://temp', 'wb+');
-            $tree->exportGedcom($stream);
+
+            if ($stream === false) {
+                throw new RuntimeException('Failed to create temporary stream');
+            }
+
+            $this->gedcom_export_service->export($tree, $stream, true);
             rewind($stream);
             $data_filesystem->putStream($filename, $stream);
             fclose($stream);
@@ -84,7 +103,7 @@ class ExportGedcomServer implements RequestHandlerInterface
             );
         }
 
-        $url = route('manage-trees', ['tree' => $tree->name()]);
+        $url = route(ManageTrees::class, ['tree' => $tree->name()]);
 
         return redirect($url);
     }

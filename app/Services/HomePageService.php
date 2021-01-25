@@ -157,11 +157,14 @@ class HomePageService
     /**
      * Get all the available blocks for a tree page.
      *
+     * @param Tree          $tree
+     * @param UserInterface $user
+     *
      * @return Collection<string,ModuleBlockInterface>
      */
-    public function availableTreeBlocks(): Collection
+    public function availableTreeBlocks(Tree $tree, UserInterface $user): Collection
     {
-        return $this->module_service->findByInterface(ModuleBlockInterface::class, false, true)
+        return $this->module_service->findByComponent(ModuleBlockInterface::class, $tree, $user)
             ->filter(static function (ModuleBlockInterface $block): bool {
                 return $block->isTreeBlock();
             })
@@ -173,11 +176,14 @@ class HomePageService
     /**
      * Get all the available blocks for a user page.
      *
+     * @param Tree          $tree
+     * @param UserInterface $user
+     *
      * @return Collection<string,ModuleBlockInterface>
      */
-    public function availableUserBlocks(): Collection
+    public function availableUserBlocks(Tree $tree, UserInterface $user): Collection
     {
-        return $this->module_service->findByInterface(ModuleBlockInterface::class, false, true)
+        return $this->module_service->findByComponent(ModuleBlockInterface::class, $tree, $user)
             ->filter(static function (ModuleBlockInterface $block): bool {
                 return $block->isUserBlock();
             })
@@ -189,20 +195,21 @@ class HomePageService
     /**
      * Get the blocks for a specified tree.
      *
-     * @param int    $tree_id
-     * @param string $location "main" or "side"
+     * @param Tree          $tree
+     * @param UserInterface $user
+     * @param string        $location "main" or "side"
      *
      * @return Collection<string,ModuleBlockInterface>
      */
-    public function treeBlocks(int $tree_id, string $location): Collection
+    public function treeBlocks(Tree $tree, UserInterface $user, string $location): Collection
     {
         $rows = DB::table('block')
-            ->where('gedcom_id', '=', $tree_id)
+            ->where('gedcom_id', '=', $tree->id())
             ->where('location', '=', $location)
             ->orderBy('block_order')
             ->pluck('module_name', 'block_id');
 
-        return $this->filterActiveBlocks($rows, $this->availableTreeBlocks());
+        return $this->filterActiveBlocks($rows, $this->availableTreeBlocks($tree, $user));
     }
 
     /**
@@ -220,14 +227,16 @@ class HomePageService
         if (!$has_blocks) {
             foreach ([ModuleBlockInterface::MAIN_BLOCKS, ModuleBlockInterface::SIDE_BLOCKS] as $location) {
                 foreach (ModuleBlockInterface::DEFAULT_TREE_PAGE_BLOCKS[$location] as $block_order => $class) {
-                    $module_name = $this->module_service->findByInterface($class)->first()->name();
+                    $module = $this->module_service->findByInterface($class)->first();
 
-                    DB::table('block')->insert([
-                        'gedcom_id'   => -1,
-                        'location'    => $location,
-                        'block_order' => $block_order,
-                        'module_name' => $module_name,
-                    ]);
+                    if ($module instanceof ModuleInterface) {
+                        DB::table('block')->insert([
+                            'gedcom_id'   => -1,
+                            'location'    => $location,
+                            'block_order' => $block_order,
+                            'module_name' => $module->name(),
+                        ]);
+                    }
                 }
             }
         }
@@ -236,20 +245,21 @@ class HomePageService
     /**
      * Get the blocks for a specified user.
      *
-     * @param int    $user_id
-     * @param string $location "main" or "side"
+     * @param Tree          $tree
+     * @param UserInterface $user
+     * @param string        $location "main" or "side"
      *
      * @return Collection<string,ModuleBlockInterface>
      */
-    public function userBlocks(int $user_id, string $location): Collection
+    public function userBlocks(Tree $tree, UserInterface $user, string $location): Collection
     {
         $rows = DB::table('block')
-            ->where('user_id', '=', $user_id)
+            ->where('user_id', '=', $user->id())
             ->where('location', '=', $location)
             ->orderBy('block_order')
             ->pluck('module_name', 'block_id');
 
-        return $this->filterActiveBlocks($rows, $this->availableUserBlocks());
+        return $this->filterActiveBlocks($rows, $this->availableUserBlocks($tree, $user));
     }
 
     /**
@@ -267,14 +277,16 @@ class HomePageService
         if (!$has_blocks) {
             foreach ([ModuleBlockInterface::MAIN_BLOCKS, ModuleBlockInterface::SIDE_BLOCKS] as $location) {
                 foreach (ModuleBlockInterface::DEFAULT_USER_PAGE_BLOCKS[$location] as $block_order => $class) {
-                    $module_name = $this->module_service->findByInterface($class)->first()->name();
+                    $module = $this->module_service->findByInterface($class)->first();
 
-                    DB::table('block')->insert([
-                        'user_id'     => -1,
-                        'location'    => $location,
-                        'block_order' => $block_order,
-                        'module_name' => $module_name,
-                    ]);
+                    if ($module instanceof ModuleBlockInterface) {
+                        DB::table('block')->insert([
+                            'user_id'     => -1,
+                            'location'    => $location,
+                            'block_order' => $block_order,
+                            'module_name' => $module->name(),
+                        ]);
+                    }
                 }
             }
         }

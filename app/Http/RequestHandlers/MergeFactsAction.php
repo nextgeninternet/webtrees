@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2021 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,11 +20,11 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
 use Fisharebest\Webtrees\Auth;
+use Fisharebest\Webtrees\Contracts\UserInterface;
 use Fisharebest\Webtrees\FlashMessages;
-use Fisharebest\Webtrees\GedcomRecord;
 use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
-use Fisharebest\Webtrees\User;
 use Illuminate\Database\Capsule\Manager as DB;
 use Illuminate\Database\Query\Expression;
 use Psr\Http\Message\ResponseInterface;
@@ -63,14 +63,14 @@ class MergeFactsAction implements RequestHandlerInterface
         $keep2 = $params['keep2'] ?? [];
 
         // Merge record2 into record1
-        $record1 = GedcomRecord::getInstance($xref1, $tree);
-        $record2 = GedcomRecord::getInstance($xref2, $tree);
+        $record1 = Registry::gedcomRecordFactory()->make($xref1, $tree);
+        $record2 = Registry::gedcomRecordFactory()->make($xref2, $tree);
 
         if (
             $record1 === null ||
             $record2 === null ||
             $record1 === $record2 ||
-            $record1::RECORD_TYPE !== $record2::RECORD_TYPE ||
+            $record1->tag() !== $record2->tag() ||
             $record1->isPendingDeletion() ||
             $record2->isPendingDeletion()
         ) {
@@ -82,7 +82,7 @@ class MergeFactsAction implements RequestHandlerInterface
         }
 
         // If we are not auto-accepting, then we can show a link to the pending deletion
-        if (Auth::user()->getPreference(User::PREF_AUTO_ACCEPT_EDITS) === '1') {
+        if (Auth::user()->getPreference(UserInterface::PREF_AUTO_ACCEPT_EDITS) === '1') {
             $record2_name = $record2->fullName();
         } else {
             $record2_name = '<a class="alert-link" href="' . e($record2->url()) . '">' . $record2->fullName() . '</a>';
@@ -112,7 +112,7 @@ class MergeFactsAction implements RequestHandlerInterface
         // Update any linked user-accounts
         DB::table('user_gedcom_setting')
             ->where('gedcom_id', '=', $tree->id())
-            ->whereIn('setting_name', [User::PREF_TREE_ACCOUNT_XREF, User::PREF_TREE_DEFAULT_XREF])
+            ->whereIn('setting_name', [UserInterface::PREF_TREE_ACCOUNT_XREF, UserInterface::PREF_TREE_DEFAULT_XREF])
             ->where('setting_value', '=', $xref2)
             ->update(['setting_value' => $xref1]);
 
@@ -127,6 +127,7 @@ class MergeFactsAction implements RequestHandlerInterface
             DB::table('hit_counter')
                 ->where('gedcom_id', '=', $tree->id())
                 ->where('page_name', '=', $page_name)
+                ->where('page_parameter', '=', $xref1)
                 ->update(['page_count' => $page_count]);
         }
 
@@ -135,7 +136,7 @@ class MergeFactsAction implements RequestHandlerInterface
             ->where('page_parameter', '=', $xref2)
             ->delete();
 
-        $gedcom = '0 @' . $record1->xref() . '@ ' . $record1::RECORD_TYPE;
+        $gedcom = '0 @' . $record1->xref() . '@ ' . $record1->tag();
 
         foreach ($record1->facts() as $fact) {
             if (in_array($fact->id(), $keep1, true)) {

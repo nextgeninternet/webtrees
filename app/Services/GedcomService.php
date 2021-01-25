@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2021 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,17 +19,15 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Services;
 
+use Fisharebest\Webtrees\Gedcom;
+
+use function abs;
+
 /**
  * Utilities for manipulating GEDCOM data.
  */
 class GedcomService
 {
-    // Gedcom allows 255 characters (not bytes), including the EOL character.
-    private const EOL         = "\r\n";
-    private const EOL_REGEX   = '\r|\r\n|\n|\n\r';
-    private const LINE_LENGTH = 255 - 2;
-
-
     // User defined tags begin with an underscore
     private const USER_DEFINED_TAG_PREFIX = '_';
 
@@ -40,8 +38,6 @@ class GedcomService
         'ADDRESS1'          => 'ADR1',
         'ADDRESS2'          => 'ADR2',
         'ADOPTION'          => 'ADOP',
-        'AFN'               => 'AFN',
-        'AGE'               => 'AGE',
         'AGENCY'            => 'AGNC',
         'ALIAS'             => 'ALIA',
         'ANCESTORS'         => 'ANCE',
@@ -65,7 +61,6 @@ class GedcomService
         'CHILD'             => 'CHIL',
         'CHRISTENING'       => 'CHR',
         'ADULT_CHRISTENING' => 'CHRA',
-        'CITY'              => 'CITY',
         'CONCATENATION'     => 'CONC',
         'CONFIRMATION'      => 'CONF',
         'CONFIRMATION-LDS'  => 'CONL',
@@ -74,8 +69,6 @@ class GedcomService
         'CORPORTATE'        => 'CORP',
         'CREMATION'         => 'CREM',
         'COUNTRY'           => 'CTRY',
-        'DATA'              => 'DATA',
-        'DATE'              => 'DATE',
         'DEATH'             => 'DEAT',
         'DESCENDANTS'       => 'DESC',
         'DESCENDANTS_INT'   => 'DESI',
@@ -84,19 +77,16 @@ class GedcomService
         'DIVORCE_FILED'     => 'DIVF',
         'PHY_DESCRIPTION'   => 'DSCR',
         'EDUCATION'         => 'EDUC',
-        'EMAIL'             => 'EMAI',
         'EMIGRATION'        => 'EMIG',
         'ENDOWMENT'         => 'ENDL',
         'ENGAGEMENT'        => 'ENGA',
         'EVENT'             => 'EVEN',
-        'FACT'              => 'FACT',
         'FAMILY'            => 'FAM',
         'FAMILY_CHILD'      => 'FAMC',
         'FAMILY_FILE'       => 'FAMF',
         'FAMILY_SPOUSE'     => 'FAMS',
         'FACIMILIE'         => 'FAX',
         'FIRST_COMMUNION'   => 'FCOM',
-        'FILE'              => 'FILE',
         'FORMAT'            => 'FORM',
         'PHONETIC'          => 'FONE',
         'GEDCOM'            => 'GEDC',
@@ -110,26 +100,22 @@ class GedcomService
         'LANGUAGE'          => 'LANG',
         'LATITUDE'          => 'LATI',
         'LONGITUDE'         => 'LONG',
-        'MAP'               => 'MAP',
         'MARRIAGE_BANN'     => 'MARB',
         'MARR_CONTRACT'     => 'MARC',
         'MARR_LICENSE'      => 'MARL',
         'MARRIAGE'          => 'MARR',
         'MEDIA'             => 'MEDI',
-        'NAME'              => 'NAME',
         'NATIONALITY'       => 'NATI',
         'NATURALIZATION'    => 'NATU',
         'CHILDREN_COUNT'    => 'NCHI',
         'NICKNAME'          => 'NICK',
         'MARRIAGE_COUNT'    => 'NMR',
-        'NOTE'              => 'NOTE',
         'NAME_PREFIX'       => 'NPFX',
         'NAME_SUFFIX'       => 'NSFX',
         'OBJECT'            => 'OBJE',
         'OCCUPATION'        => 'OCCU',
         'ORDINANCE'         => 'ORDI',
         'ORDINATION'        => 'ORDN',
-        'PAGE'              => 'PAGE',
         'PEDIGREE'          => 'PEDI',
         'PHONE'             => 'PHON',
         'PLACE'             => 'PLAC',
@@ -147,11 +133,9 @@ class GedcomService
         'RETIREMENT'        => 'RETI',
         'REC_FILE_NUMBER'   => 'RFN',
         'REC_ID_NUMBER'     => 'RIN',
-        'ROLE'              => 'ROLE',
         'ROMANIZED'         => 'ROMN',
         'SEALING_CHILD'     => 'SLGC',
         'SEALING_SPOUSE'    => 'SLGS',
-        'SEX'               => 'SEX',
         'SOURCE'            => 'SOUR',
         'SURN_PREFIX'       => 'SPFX',
         'SOC_SEC_NUMBER'    => 'SSN',
@@ -161,36 +145,22 @@ class GedcomService
         'SUBMISSION'        => 'SUBN',
         'SURNAME'           => 'SURN',
         'TEMPLE'            => 'TEMP',
-        'TEXT'              => 'TEXT',
-        'TIME'              => 'TIME',
         'TITLE'             => 'TITL',
         'TRAILER'           => 'TRLR',
-        'TYPE'              => 'TYPE',
         'VERSION'           => 'VERS',
-        'WIFE'              => 'WIFE',
-        'WILL'              => 'WILL',
         'WEB'               => 'WWW',
         '_DEATH_OF_SPOUSE'  => 'DETS',
         '_DEGREE'           => '_DEG',
-        '_FILE'             => 'FILE',
         '_MEDICAL'          => '_MCL',
         '_MILITARY_SERVICE' => '_MILT',
     ];
 
     // Custom tags used by other applications, with direct synonyms
     private const TAG_SYNONYMS = [
+        // Convert PhpGedView tag to webtrees
+        '_PGVU'     => '_WT_USER',
+        '_PGV_OBJS' => '_WT_OBJE_SORT',
     ];
-
-    // LATI and LONG tags
-    private const DEGREE_FORMAT  = ' % .5f%s';
-    private const LATITUDE_NORTH = 'N';
-    private const LATITUDE_SOUTH = 'S';
-    private const LONGITUDE_EAST = 'E';
-    private const LONGITUDE_WEST = 'W';
-
-    // PLAC tags
-    private const PLACE_SEPARATOR       = ', ';
-    private const PLACE_SEPARATOR_REGEX = ' *, *';
 
     // SEX tags
     private const SEX_FEMALE  = 'F';
@@ -226,21 +196,21 @@ class GedcomService
     /**
      * @param string $text
      *
-     * @return float
+     * @return float|null
      */
-    public function readLatitude(string $text): float
+    public function readLatitude(string $text): ?float
     {
-        return $this->readDegrees($text, self::LATITUDE_NORTH, self::LATITUDE_SOUTH);
+        return $this->readDegrees($text, Gedcom::LATITUDE_NORTH, Gedcom::LATITUDE_SOUTH);
     }
 
     /**
      * @param string $text
      *
-     * @return float
+     * @return float|null
      */
-    public function readLongitude(string $text): float
+    public function readLongitude(string $text): ?float
     {
-        return $this->readDegrees($text, self::LONGITUDE_EAST, self::LONGITUDE_WEST);
+        return $this->readDegrees($text, Gedcom::LONGITUDE_EAST, Gedcom::LONGITUDE_WEST);
     }
 
     /**
@@ -248,9 +218,9 @@ class GedcomService
      * @param string $positive
      * @param string $negative
      *
-     * @return float
+     * @return float|null
      */
-    private function readDegrees(string $text, string $positive, string $negative): float
+    private function readDegrees(string $text, string $positive, string $negative): ?float
     {
         $text       = trim($text);
         $hemisphere = substr($text, 0, 1);
@@ -276,43 +246,7 @@ class GedcomService
         }
 
         // Can't match anything.
-        return 0.0;
-    }
-
-    /**
-     * @param float $latitude
-     *
-     * @return string
-     */
-    public function writeLatitude(float $latitude): string
-    {
-        return $this->writeDegrees($latitude, self::LATITUDE_NORTH, self::LATITUDE_SOUTH);
-    }
-
-    /**
-     * @param float $longitude
-     *
-     * @return string
-     */
-    public function writeLongitude(float $longitude): string
-    {
-        return $this->writeDegrees($longitude, self::LONGITUDE_EAST, self::LONGITUDE_WEST);
-    }
-
-    /**
-     * @param float  $degrees
-     * @param string $positive
-     * @param string $negative
-     *
-     * @return string
-     */
-    private function writeDegrees(float $degrees, string $positive, string $negative): string
-    {
-        if ($degrees < 0.0) {
-            return sprintf(self::DEGREE_FORMAT, $degrees, $negative);
-        }
-
-        return sprintf(self::DEGREE_FORMAT, $degrees, $positive);
+        return null;
     }
 
     /**
@@ -328,7 +262,7 @@ class GedcomService
     {
         $text = trim($text);
 
-        return preg_split(self::PLACE_SEPARATOR_REGEX, $text, PREG_SPLIT_NO_EMPTY);
+        return preg_split(Gedcom::PLACE_SEPARATOR_REGEX, $text);
     }
 
     /**
@@ -338,7 +272,7 @@ class GedcomService
      */
     public function writePlace(array $place): string
     {
-        return implode(self::PLACE_SEPARATOR, $place);
+        return implode(Gedcom::PLACE_SEPARATOR, $place);
     }
 
     /**

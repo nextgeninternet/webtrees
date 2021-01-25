@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,9 +19,9 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Report;
 
+use function str_contains;
 use function str_replace;
 use function stripos;
-use function strpos;
 
 /**
  * Class ReportHtmlCell
@@ -37,7 +37,7 @@ class ReportHtmlCell extends ReportBaseCell
      */
     public function render($renderer)
     {
-        if (strpos($this->text, '{{:ptp:}}') !== false) {
+        if (str_contains($this->text, '{{:ptp:}}')) {
             return;
         }
         $temptext = str_replace('#PAGENUM#', (string) $renderer->pageNo(), $this->text);
@@ -196,16 +196,16 @@ class ReportHtmlCell extends ReportBaseCell
         echo "</div>\n";
 
         // Where to place the next position
-        if ($this->newline == 0) {
+        if ($this->newline === 0) {
             // -> Next to this cell in the same line
             $renderer->setXy($this->left + $this->width, $this->top);
             $renderer->lastCellHeight = $this->height;
-        } elseif ($this->newline == 1) {
+        } elseif ($this->newline === 1) {
             // -> On a new line at the margin - Default
             $renderer->setXy(0, $renderer->getY() + $this->height + ($cP * 2));
             // Reset the last cell height for the next line
             $renderer->lastCellHeight = 0;
-        } elseif ($this->newline == 2) {
+        } elseif ($this->newline === 2) {
             // -> On a new line at the end of this cell
             $renderer->setXy($renderer->getX() + $this->width, $renderer->getY() + $this->height + ($cP * 2));
             // Reset the last cell height for the next line

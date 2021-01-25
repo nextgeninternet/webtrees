@@ -8,12 +8,26 @@ use Illuminate\Support\Collection;
 
 /**
  * @var Collection<Fact> $facts
+ * @var int              $limit_high
+ * @var int              $limit_low
+ * @var array<mixed>     $order
  */
 
 ?>
 
 <div class="table-responsive">
-    <table class="table table-sm datatable wt-table-events" data-info="false" data-paging="false" data-searching="false" data-sorting="<?= e('[[1, "asc" ]]') ?>">
+    <table
+        class="table table-sm datatable wt-table-events"
+        <?= view('lists/datatables-attributes') ?>
+        <?php if ($facts->count() < e($limit_high)) : ?>
+            data-paging="false"
+        <?php endif ?>
+        data-filter="false"
+        data-info="false"
+        data-length-change="false"
+        data-page-length="<?= e($limit_low) ?>"
+        data-order="<?= e(json_encode($order ?? [])) ?>"
+    >
         <thead>
             <tr>
                 <th>

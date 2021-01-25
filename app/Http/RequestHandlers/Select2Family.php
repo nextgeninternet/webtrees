@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,9 +20,12 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
 use Fisharebest\Webtrees\Family;
+use Fisharebest\Webtrees\Registry;
+use Fisharebest\Webtrees\Services\SearchService;
 use Fisharebest\Webtrees\Tree;
 use Illuminate\Support\Collection;
 
+use function explode;
 use function view;
 
 /**
@@ -30,6 +33,20 @@ use function view;
  */
 class Select2Family extends AbstractSelect2Handler
 {
+    /** @var SearchService */
+    protected $search_service;
+
+    /**
+     * Select2Family constructor.
+     *
+     * @param SearchService $search_service
+     */
+    public function __construct(
+        SearchService $search_service
+    ) {
+        $this->search_service = $search_service;
+    }
+
     /**
      * Perform the search
      *
@@ -37,23 +54,24 @@ class Select2Family extends AbstractSelect2Handler
      * @param string $query
      * @param int    $offset
      * @param int    $limit
+     * @param string $at
      *
      * @return Collection<array<string,string>>
      */
-    protected function search(Tree $tree, string $query, int $offset, int $limit): Collection
+    protected function search(Tree $tree, string $query, int $offset, int $limit, string $at): Collection
     {
         // Search by XREF
-        $family = Family::getInstance($query, $tree);
+        $family = Registry::familyFactory()->make($query, $tree);
 
         if ($family instanceof Family) {
             $results = new Collection([$family]);
         } else {
-            $results = $this->search_service->searchFamilyNames([$tree], [$query], $offset, $limit);
+            $results = $this->search_service->searchFamilyNames([$tree], explode(' ', $query), $offset, $limit);
         }
 
-        return $results->map(static function (Family $family): array {
+        return $results->map(static function (Family $family) use ($at): array {
             return [
-                'id'    => $family->xref(),
+                'id'    => $at . $family->xref() . $at,
                 'text'  => view('selects/family', ['family' => $family]),
                 'title' => ' ',
             ];

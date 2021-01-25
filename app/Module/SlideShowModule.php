@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Module;
 
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\GedcomTag;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Media;
@@ -32,7 +33,7 @@ use stdClass;
 use function app;
 use function assert;
 use function in_array;
-use function strpos;
+use function str_contains;
 
 /**
  * Class SlideShowModule
@@ -120,7 +121,7 @@ class SlideShowModule extends AbstractModule implements ModuleBlockInterface
             ->get()
             ->shuffle()
             ->first(static function (stdClass $row) use ($filter_links, $tree): bool {
-                $media = Media::getInstance($row->m_id, $tree, $row->m_gedcom);
+                $media = Registry::mediaFactory()->make($row->m_id, $tree, $row->m_gedcom);
                 assert($media instanceof Media);
 
                 if (!$media->canShow() || $media->firstImageFile() === null) {
@@ -133,10 +134,10 @@ class SlideShowModule extends AbstractModule implements ModuleBlockInterface
                             return true;
 
                         case self::LINK_INDIVIDUAL:
-                            return strpos($individual->gedcom(), "\n1 OBJE @" . $media->xref() . '@') !== false;
+                            return str_contains($individual->gedcom(), "\n1 OBJE @" . $media->xref() . '@');
 
                         case self::LINK_EVENT:
-                            return strpos($individual->gedcom(), "\n2 OBJE @" . $media->xref() . '@') !== false;
+                            return str_contains($individual->gedcom(), "\n2 OBJE @" . $media->xref() . '@');
                     }
                 }
 
@@ -146,7 +147,7 @@ class SlideShowModule extends AbstractModule implements ModuleBlockInterface
         $random_media = null;
 
         if ($random_row !== null) {
-            $random_media = Media::getInstance($random_row->m_id, $tree, $random_row->m_gedcom);
+            $random_media = Registry::mediaFactory()->make($random_row->m_id, $tree, $random_row->m_gedcom);
         }
 
         if ($random_media instanceof Media) {

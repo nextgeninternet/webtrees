@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -23,6 +23,7 @@ use Fig\Http\Message\StatusCodeInterface;
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Fact;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Repository;
 use Fisharebest\Webtrees\Services\ClipboardService;
 use Fisharebest\Webtrees\Tree;
@@ -47,15 +48,15 @@ class RepositoryPage implements RequestHandlerInterface
 
     // Show the repository's facts in this order:
     private const FACT_ORDER = [
-        1 => 'NAME',
-        'ADDR',
-        'NOTE',
-        'WWW',
-        'REFN',
-        'RIN',
-        '_UID',
-        'CHAN',
-        'RESN',
+        1 => 'REPO:NAME',
+        'REPO:ADDR',
+        'REPO:NOTE',
+        'REPO:WWW',
+        'REPO:REFN',
+        'REPO:RIN',
+        'REPO:_UID',
+        'REPO:CHAN',
+        'REPO:RESN',
     ];
 
     /** @var ClipboardService */
@@ -84,22 +85,23 @@ class RepositoryPage implements RequestHandlerInterface
         $xref = $request->getAttribute('xref');
         assert(is_string($xref));
 
-        $repository = Repository::getInstance($xref, $tree);
+        $repository = Registry::repositoryFactory()->make($xref, $tree);
         $repository = Auth::checkRepositoryAccess($repository, false);
 
         // Redirect to correct xref/slug
-        if ($repository->xref() !== $xref ||  $request->getAttribute('slug') !== $repository->slug()) {
+        if ($repository->xref() !== $xref || $request->getAttribute('slug') !== $repository->slug()) {
             return redirect($repository->url(), StatusCodeInterface::STATUS_MOVED_PERMANENTLY);
         }
 
         return $this->viewResponse('repository-page', [
-            'clipboard_facts' => $this->clipboard_service->pastableFacts($repository, new Collection()),
-            'facts'           => $this->facts($repository),
-            'meta_robots'     => 'index,follow',
-            'repository'      => $repository,
-            'sources'         => $repository->linkedSources('REPO'),
-            'title'           => $repository->fullName(),
-            'tree'            => $tree,
+            'clipboard_facts'  => $this->clipboard_service->pastableFacts($repository, new Collection()),
+            'facts'            => $this->facts($repository),
+            'meta_description' => '',
+            'meta_robots'      => 'index,follow',
+            'repository'       => $repository,
+            'sources'          => $repository->linkedSources('REPO'),
+            'title'            => $repository->fullName(),
+            'tree'             => $tree,
         ]);
     }
 
@@ -112,8 +114,8 @@ class RepositoryPage implements RequestHandlerInterface
     {
         return $record->facts()
             ->sort(static function (Fact $x, Fact $y): int {
-                $sort_x = array_search($x->getTag(), self::FACT_ORDER, true) ?: PHP_INT_MAX;
-                $sort_y = array_search($y->getTag(), self::FACT_ORDER, true) ?: PHP_INT_MAX;
+                $sort_x = array_search($x->tag(), self::FACT_ORDER, true) ?: PHP_INT_MAX;
+                $sort_y = array_search($y->tag(), self::FACT_ORDER, true) ?: PHP_INT_MAX;
 
                 return $sort_x <=> $sort_y;
             });

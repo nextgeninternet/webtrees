@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -22,8 +22,7 @@ namespace Fisharebest\Webtrees\Http\Controllers\Admin;
 use Fisharebest\Webtrees\Fact;
 use Fisharebest\Webtrees\Gedcom;
 use Fisharebest\Webtrees\I18N;
-use Fisharebest\Webtrees\Individual;
-use Fisharebest\Webtrees\Media;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Services\DatatablesService;
 use Fisharebest\Webtrees\Services\TreeService;
 use Illuminate\Database\Capsule\Manager as DB;
@@ -33,6 +32,13 @@ use Illuminate\Support\Collection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use stdClass;
+
+use function addcslashes;
+use function e;
+use function in_array;
+use function preg_match;
+use function response;
+use function view;
 
 /**
  * Controller for fixing media links.
@@ -89,8 +95,8 @@ class FixLevel0MediaController extends AbstractAdminController
         $tree_id   = (int) $params['tree_id'];
 
         $tree       = $this->tree_service->find($tree_id);
-        $individual = Individual::getInstance($indi_xref, $tree);
-        $media      = Media::getInstance($obje_xref, $tree);
+        $individual = Registry::individualFactory()->make($indi_xref, $tree);
+        $media      = Registry::mediaFactory()->make($obje_xref, $tree);
 
         if ($individual !== null && $media !== null) {
             foreach ($individual->facts() as $fact1) {
@@ -151,13 +157,13 @@ class FixLevel0MediaController extends AbstractAdminController
             ->orderBy('individuals.i_file')
             ->orderBy('individuals.i_id')
             ->orderBy('media.m_id')
-            ->whereContains('descriptive_title', $request->getQueryParams()['search']['value'] ?? '')
+            ->where('descriptive_title', 'LIKE', '%' . addcslashes($request->getQueryParams()['search']['value'] ?? '', '\\%_') . '%')
             ->select(['media.m_file', 'media.m_id', 'media.m_gedcom', 'individuals.i_id', 'individuals.i_gedcom']);
 
         return $this->datatables_service->handleQuery($request, $query, [], [], function (stdClass $datum) use ($ignore_facts): array {
             $tree       = $this->tree_service->find((int) $datum->m_file);
-            $media      = Media::getInstance($datum->m_id, $tree, $datum->m_gedcom);
-            $individual = Individual::getInstance($datum->i_id, $tree, $datum->i_gedcom);
+            $media      = Registry::mediaFactory()->make($datum->m_id, $tree, $datum->m_gedcom);
+            $individual = Registry::individualFactory()->make($datum->i_id, $tree, $datum->i_gedcom);
 
             $facts = $individual->facts([], true)
                 ->filter(static function (Fact $fact) use ($ignore_facts): bool {

@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,7 +19,8 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Census;
 
-use Fisharebest\Webtrees\Date;
+use Fisharebest\Webtrees\Age;
+use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
 
 /**
@@ -41,7 +42,9 @@ class CensusColumnAgeMarried extends AbstractCensusColumn implements CensusColum
             foreach ($individual->spouseFamilies() as $family) {
                 foreach ($family->facts(['MARR'], true) as $fact) {
                     if ($fact->date()->isOK()) {
-                        return (string) Date::getAgeYears($individual->getBirthDate(), $fact->date());
+                        $age = new Age($individual->getBirthDate(), $fact->date());
+
+                        return I18N::number($age->ageYears());
                     }
                 }
             }

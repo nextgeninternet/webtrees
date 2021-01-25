@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,9 +19,24 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees;
 
+use Aura\Router\Route;
 use Aura\Router\RouterContainer;
 use Fig\Http\Message\RequestMethodInterface;
-use Fisharebest\Webtrees\Http\Controllers\GedcomFileController;
+use Fisharebest\Webtrees\Factories\CacheFactory;
+use Fisharebest\Webtrees\Factories\FamilyFactory;
+use Fisharebest\Webtrees\Factories\FilesystemFactory;
+use Fisharebest\Webtrees\Factories\GedcomRecordFactory;
+use Fisharebest\Webtrees\Factories\HeaderFactory;
+use Fisharebest\Webtrees\Factories\IndividualFactory;
+use Fisharebest\Webtrees\Factories\LocationFactory;
+use Fisharebest\Webtrees\Factories\MediaFactory;
+use Fisharebest\Webtrees\Factories\NoteFactory;
+use Fisharebest\Webtrees\Factories\RepositoryFactory;
+use Fisharebest\Webtrees\Factories\SourceFactory;
+use Fisharebest\Webtrees\Factories\SubmissionFactory;
+use Fisharebest\Webtrees\Factories\SubmitterFactory;
+use Fisharebest\Webtrees\Factories\XrefFactory;
+use Fisharebest\Webtrees\Http\RequestHandlers\GedcomLoad;
 use Fisharebest\Webtrees\Http\Routes\WebRoutes;
 use Fisharebest\Webtrees\Module\ModuleThemeInterface;
 use Fisharebest\Webtrees\Module\WebtreesTheme;
@@ -30,9 +45,6 @@ use Fisharebest\Webtrees\Services\ModuleService;
 use Fisharebest\Webtrees\Services\TimeoutService;
 use Fisharebest\Webtrees\Services\TreeService;
 use Illuminate\Database\Capsule\Manager as DB;
-use Illuminate\Database\Query\Builder;
-use League\Flysystem\Filesystem;
-use League\Flysystem\Memory\MemoryAdapter;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ServerRequestFactoryInterface;
@@ -41,7 +53,6 @@ use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UploadedFileFactoryInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Psr\Http\Message\UriFactoryInterface;
-use Symfony\Component\Cache\Adapter\NullAdapter;
 
 use function app;
 use function basename;
@@ -64,7 +75,7 @@ class TestCase extends \PHPUnit\Framework\TestCase
     /**
      * Things to run once, before all the tests.
      */
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
 
@@ -75,8 +86,21 @@ class TestCase extends \PHPUnit\Framework\TestCase
         app()->bind(UploadedFileFactoryInterface::class, Psr17Factory::class);
         app()->bind(UriFactoryInterface::class, Psr17Factory::class);
 
-        // Disable the cache.
-        app()->instance('cache.array', new Cache(new NullAdapter()));
+        // Register the factories
+        Registry::cache(new CacheFactory());
+        Registry::familyFactory(new FamilyFactory());
+        Registry::filesystem(new FilesystemFactory());
+        Registry::gedcomRecordFactory(new GedcomRecordFactory());
+        Registry::headerFactory(new HeaderFactory());
+        Registry::individualFactory(new IndividualFactory());
+        Registry::locationFactory(new LocationFactory());
+        Registry::mediaFactory(new MediaFactory());
+        Registry::noteFactory(new NoteFactory());
+        Registry::repositoryFactory(new RepositoryFactory());
+        Registry::sourceFactory(new SourceFactory());
+        Registry::submissionFactory(new SubmissionFactory());
+        Registry::submitterFactory(new SubmitterFactory());
+        Registry::xrefFactory(new XrefFactory());
 
         app()->bind(ModuleThemeInterface::class, WebtreesTheme::class);
 
@@ -98,7 +122,7 @@ class TestCase extends \PHPUnit\Framework\TestCase
     /**
      * Things to run once, AFTER all the tests.
      */
-    public static function tearDownAfterClass()
+    public static function tearDownAfterClass(): void
     {
         if (static::$uses_database) {
             $pdo = DB::connection()->getPdo();
@@ -119,12 +143,6 @@ class TestCase extends \PHPUnit\Framework\TestCase
             'database' => ':memory:',
         ]);
         $capsule->setAsGlobal();
-
-        Builder::macro('whereContains', function ($column, string $search, string $boolean = 'and'): Builder {
-            $search = strtr($search, ['\\' => '\\\\', '%' => '\\%', '_' => '\\_', ' ' => '%']);
-
-            return $this->where($column, 'LIKE', '%' . $search . '%', $boolean);
-        });
 
         // Migrations create logs, which requires an IP address, which requires a request
         self::createRequest();
@@ -169,8 +187,7 @@ class TestCase extends \PHPUnit\Framework\TestCase
             ->withAttribute('base_url', 'https://webtrees.test')
             ->withAttribute('client-ip', '127.0.0.1')
             ->withAttribute('user', new GuestUser())
-            ->withAttribute('filesystem.data', new Filesystem(new MemoryAdapter()))
-            ->withAttribute('filesystem.data.name', 'data/');
+            ->withAttribute('route', new Route());
 
         foreach ($attributes as $key => $value) {
             $request = $request->withAttribute($key, $value);
@@ -200,15 +217,13 @@ class TestCase extends \PHPUnit\Framework\TestCase
     /**
      * Things to run after every test
      */
-    protected function tearDown()
+    protected function tearDown(): void
     {
         if (static::$uses_database) {
             DB::connection()->rollBack();
         }
 
-        Site::$preferences                  = [];
-        GedcomRecord::$gedcom_record_cache  = null;
-        GedcomRecord::$pending_record_cache = null;
+        Site::$preferences = [];
 
         Auth::logout();
     }
@@ -229,11 +244,11 @@ class TestCase extends \PHPUnit\Framework\TestCase
         $tree->importGedcomFile($stream, $gedcom_file);
 
         $timeout_service = new TimeoutService(microtime(true));
-        $controller      = new GedcomFileController($timeout_service);
+        $controller      = new GedcomLoad($timeout_service);
         $request         = self::createRequest()->withAttribute('tree', $tree);
 
         do {
-            $controller->import($request);
+            $controller->handle($request);
 
             $imported = $tree->getPreference('imported');
         } while (!$imported);

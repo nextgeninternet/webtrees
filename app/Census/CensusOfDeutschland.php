@@ -49,4 +49,14 @@ class CensusOfDeutschland extends Census implements CensusPlaceInterface
     {
         return 'Deutschland';
     }
+
+    /**
+     * In which language was this census written.
+     *
+     * @return string
+     */
+    public function censusLanguage(): string
+    {
+        return 'de';
+    }
 }

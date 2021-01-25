@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,12 +20,12 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
 use Fisharebest\Webtrees\Family;
-use Fisharebest\Webtrees\GedcomRecord;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Media;
 use Fisharebest\Webtrees\Note;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Repository;
 use Fisharebest\Webtrees\Source;
 use Fisharebest\Webtrees\Submitter;
@@ -58,11 +58,11 @@ class MergeRecordsPage implements RequestHandlerInterface
         $tree = $request->getAttribute('tree');
         assert($tree instanceof Tree);
 
-        $xref1  = $request->getQueryParams()['xref1'] ?? '';
-        $xref2  = $request->getQueryParams()['xref2'] ?? '';
+        $xref1 = $request->getQueryParams()['xref1'] ?? '';
+        $xref2 = $request->getQueryParams()['xref2'] ?? '';
 
-        $record1 = GedcomRecord::getInstance($xref1, $tree);
-        $record2 = GedcomRecord::getInstance($xref2, $tree);
+        $record1 = Registry::gedcomRecordFactory()->make($xref1, $tree);
+        $record2 = Registry::gedcomRecordFactory()->make($xref2, $tree);
 
         $title = I18N::translate('Merge records') . ' — ' . e($tree->title());
 

@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -25,6 +25,7 @@ use Fisharebest\Webtrees\Fact;
 use Fisharebest\Webtrees\Filter;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\Note;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Services\ClipboardService;
 use Fisharebest\Webtrees\Tree;
 use Illuminate\Support\Collection;
@@ -69,7 +70,7 @@ class NotePage implements RequestHandlerInterface
         $xref = $request->getAttribute('xref');
         assert(is_string($xref));
 
-        $note = Note::getInstance($xref, $tree);
+        $note = Registry::noteFactory()->make($xref, $tree);
         $note = Auth::checkNoteAccess($note, false);
 
         // Redirect to correct xref/slug
@@ -78,18 +79,18 @@ class NotePage implements RequestHandlerInterface
         }
 
         return $this->viewResponse('note-page', [
-            'clipboard_facts' => $this->clipboard_service->pastableFacts($note, new Collection()),
-            'facts'           => $this->facts($note),
-            'families'        => $note->linkedFamilies('NOTE'),
-            'individuals'     => $note->linkedIndividuals('NOTE'),
-            'note'            => $note,
-            'notes'           => new Collection(),
-            'media_objects'   => $note->linkedMedia('NOTE'),
-            'meta_robots'     => 'index,follow',
-            'sources'         => $note->linkedSources('NOTE'),
-            'text'            => Filter::formatText($note->getNote(), $tree),
-            'title'           => $note->fullName(),
-            'tree'            => $tree,
+            'clipboard_facts'  => $this->clipboard_service->pastableFacts($note, new Collection()),
+            'facts'            => $this->facts($note),
+            'families'         => $note->linkedFamilies('NOTE'),
+            'individuals'      => $note->linkedIndividuals('NOTE'),
+            'note'             => $note,
+            'media_objects'    => $note->linkedMedia('NOTE'),
+            'meta_description' => '',
+            'meta_robots'      => 'index,follow',
+            'sources'          => $note->linkedSources('NOTE'),
+            'text'             => Filter::formatText($note->getNote(), $tree),
+            'title'            => $note->fullName(),
+            'tree'             => $tree,
         ]);
     }
 
@@ -102,7 +103,7 @@ class NotePage implements RequestHandlerInterface
     {
         return $record->facts()
             ->filter(static function (Fact $fact): bool {
-                return $fact->getTag() !== 'CONT';
+                return $fact->tag() !== 'NOTE:CONT';
             });
     }
 }

@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -24,6 +24,8 @@ use Fisharebest\Flysystem\Adapter\ChrootAdapter;
 use Fisharebest\Webtrees\Exceptions\HttpServerErrorException;
 use Fisharebest\Webtrees\Http\RequestHandlers\ControlPanel;
 use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Registry;
+use Fisharebest\Webtrees\Services\GedcomExportService;
 use Fisharebest\Webtrees\Services\TreeService;
 use Fisharebest\Webtrees\Services\UpgradeService;
 use Fisharebest\Webtrees\Tree;
@@ -82,6 +84,9 @@ class UpgradeController extends AbstractAdminController
         'vendor',
     ];
 
+    /** @var GedcomExportService */
+    private $gedcom_export_service;
+
     /** @var UpgradeService */
     private $upgrade_service;
 
@@ -91,15 +96,18 @@ class UpgradeController extends AbstractAdminController
     /**
      * UpgradeController constructor.
      *
-     * @param TreeService    $tree_service
-     * @param UpgradeService $upgrade_service
+     * @param GedcomExportService $gedcom_export_service
+     * @param TreeService         $tree_service
+     * @param UpgradeService      $upgrade_service
      */
     public function __construct(
+        GedcomExportService $gedcom_export_service,
         TreeService $tree_service,
         UpgradeService $upgrade_service
     ) {
-        $this->tree_service    = $tree_service;
-        $this->upgrade_service = $upgrade_service;
+        $this->gedcom_export_service = $gedcom_export_service;
+        $this->tree_service          = $tree_service;
+        $this->upgrade_service       = $upgrade_service;
     }
 
     /**
@@ -113,7 +121,11 @@ class UpgradeController extends AbstractAdminController
 
         $title = I18N::translate('Upgrade wizard');
 
-        if ($continue === '1') {
+        $latest_version = $this->upgrade_service->latestVersion();
+
+        $upgrade_available = version_compare($latest_version, Webtrees::VERSION) > 0;
+
+        if ($upgrade_available && $continue === '1') {
             return $this->viewResponse('admin/upgrade/steps', [
                 'steps' => $this->wizardSteps(),
                 'title' => $title,
@@ -122,7 +134,7 @@ class UpgradeController extends AbstractAdminController
 
         return $this->viewResponse('admin/upgrade/wizard', [
             'current_version' => Webtrees::VERSION,
-            'latest_version'  => $this->upgrade_service->latestVersion(),
+            'latest_version'  => $latest_version,
             'title'           => $title,
         ]);
     }
@@ -146,11 +158,9 @@ class UpgradeController extends AbstractAdminController
      */
     public function step(ServerRequestInterface $request): ResponseInterface
     {
-        $root_filesystem = $request->getAttribute('filesystem.root');
-        assert($root_filesystem instanceof FilesystemInterface);
+        $root_filesystem = Registry::filesystem()->root();
 
-        $data_filesystem = $request->getAttribute('filesystem.data');
-        assert($data_filesystem instanceof FilesystemInterface);
+        $data_filesystem = Registry::filesystem()->data();
 
         // Somewhere to unpack a .ZIP file
         $temporary_filesystem = new Filesystem(new ChrootAdapter($root_filesystem, self::UPGRADE_FOLDER));
@@ -295,13 +305,10 @@ class UpgradeController extends AbstractAdminController
 
         $filename = $tree->name() . date('-Y-m-d') . '.ged';
 
-        if ($data_filesystem->has($filename)) {
-            $data_filesystem->delete($filename);
-        }
+        $this->gedcom_export_service->export($tree, $stream);
 
-        $tree->exportGedcom($stream);
         fseek($stream, 0);
-        $data_filesystem->writeStream($tree->name() . date('-Y-m-d') . '.ged', $stream);
+        $data_filesystem->putStream($tree->name() . date('-Y-m-d') . '.ged', $stream);
         fclose($stream);
 
         return response(view('components/alert-success', [

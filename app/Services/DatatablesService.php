@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -26,6 +26,9 @@ use Illuminate\Support\Collection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
+use function addcslashes;
+use function strtr;
+
 /**
  * Paginate and search queries for datatables.
  *
@@ -37,7 +40,7 @@ class DatatablesService
      * Apply filtering and pagination to a collection, and generate a response suitable for datatables.
      *
      * @param ServerRequestInterface $request        Includes the datatables request parameters.
-     * @param Collection             $collection     All the data.
+     * @param Collection<mixed>      $collection     All the data.
      * @param string[]|int[]         $search_columns The names of searchable columns.
      * @param string[]|int[]         $sort_columns   Sort column mapping.
      * @param Closure                $callback       Converts a row-object to an array-of-columns.
@@ -136,8 +139,11 @@ class DatatablesService
         // Filtering
         if ($search !== '') {
             $query->where(static function (Builder $query) use ($search, $search_columns): void {
+                $like = '%' . addcslashes($search, '\\%_') . '%';
+                $like = strtr($like, [' ' => '%']);
+
                 foreach ($search_columns as $search_column) {
-                    $query->whereContains($search_column, $search, 'or');
+                    $query->orWhere($search_column, 'LIKE', $like);
                 }
             });
         }

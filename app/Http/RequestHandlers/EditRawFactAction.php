@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
 use Fisharebest\Webtrees\Auth;
-use Fisharebest\Webtrees\GedcomRecord;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -50,9 +50,11 @@ class EditRawFactAction implements RequestHandlerInterface
         $xref = $request->getAttribute('xref');
         assert(is_string($xref));
 
-        $record = GedcomRecord::getInstance($xref, $tree);
+        $record = Registry::gedcomRecordFactory()->make($xref, $tree);
+        $record = Auth::checkRecordAccess($record, true);
 
         $fact_id = $request->getAttribute('fact_id');
+        assert(is_string($fact_id));
 
         $params = (array) $request->getParsedBody();
 
@@ -63,13 +65,13 @@ class EditRawFactAction implements RequestHandlerInterface
         $gedcom = trim($gedcom); // Leading/trailing spaces
         $record = Auth::checkRecordAccess($record, true);
 
-        foreach ($record->facts() as $fact) {
-            if (!$fact->isPendingDeletion() && $fact->id() === $fact_id && $fact->canEdit()) {
+        foreach ($record->facts([], false, null, true) as $fact) {
+            if ($fact->id() === $fact_id && $fact->canEdit()) {
                 $record->updateFact($fact_id, $gedcom, false);
                 break;
             }
         }
 
-        return redirect($record->url());
+        return redirect($params['url'] ?? $record->url());
     }
 }

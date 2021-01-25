@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -22,6 +22,7 @@ namespace Fisharebest\Webtrees\Module;
 use Aura\Router\RouterContainer;
 use Fig\Http\Message\RequestMethodInterface;
 use Fisharebest\Webtrees\Auth;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Family;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
@@ -45,8 +46,7 @@ class HourglassChartModule extends AbstractModule implements ModuleChartInterfac
 {
     use ModuleChartTrait;
 
-    private const ROUTE_NAME = 'hourglass-chart';
-    private const ROUTE_URL  = '/tree/{tree}/hourglass-{generations}-{spouses}/{xref}';
+    protected const ROUTE_URL  = '/tree/{tree}/hourglass-{generations}-{spouses}/{xref}';
 
     // Defaults
     private const   DEFAULT_GENERATIONS = '3';
@@ -71,7 +71,7 @@ class HourglassChartModule extends AbstractModule implements ModuleChartInterfac
         assert($router_container instanceof RouterContainer);
 
         $router_container->getMap()
-            ->get(self::ROUTE_NAME, self::ROUTE_URL, $this)
+            ->get(static::class, static::ROUTE_URL, $this)
             ->allows(RequestMethodInterface::METHOD_POST)
             ->tokens([
                 'generations' => '\d+',
@@ -146,7 +146,7 @@ class HourglassChartModule extends AbstractModule implements ModuleChartInterfac
      */
     public function chartUrl(Individual $individual, array $parameters = []): string
     {
-        return route(self::ROUTE_NAME, [
+        return route(static::class, [
                 'xref' => $individual->xref(),
                 'tree' => $individual->tree()->name(),
             ] + $parameters + self::DEFAULT_PARAMETERS);
@@ -165,7 +165,7 @@ class HourglassChartModule extends AbstractModule implements ModuleChartInterfac
         $xref = $request->getAttribute('xref');
         assert(is_string($xref));
 
-        $individual = Individual::getInstance($xref, $tree);
+        $individual = Registry::individualFactory()->make($xref, $tree);
         $individual = Auth::checkIndividualAccess($individual, false, true);
 
         $user        = $request->getAttribute('user');
@@ -177,7 +177,7 @@ class HourglassChartModule extends AbstractModule implements ModuleChartInterfac
         if ($request->getMethod() === RequestMethodInterface::METHOD_POST) {
             $params = (array) $request->getParsedBody();
 
-            return redirect(route(self::ROUTE_NAME, [
+            return redirect(route(static::class, [
                 'tree'        => $tree->name(),
                 'xref'        => $params['xref'],
                 'generations' => $params['generations'],
@@ -185,7 +185,7 @@ class HourglassChartModule extends AbstractModule implements ModuleChartInterfac
             ]));
         }
 
-        Auth::checkComponentAccess($this, 'chart', $tree, $user);
+        Auth::checkComponentAccess($this, ModuleChartInterface::class, $tree, $user);
 
         $generations = min($generations, self::MAXIMUM_GENERATIONS);
         $generations = max($generations, self::MINIMUM_GENERATIONS);
@@ -233,7 +233,7 @@ class HourglassChartModule extends AbstractModule implements ModuleChartInterfac
 
         $xref = $request->getQueryParams()['xref'] ?? '';
 
-        $family = Family::getInstance($xref, $tree);
+        $family = Registry::familyFactory()->make($xref, $tree);
         $family = Auth::checkFamilyAccess($family);
 
         return response(view('modules/hourglass-chart/parents', [
@@ -257,7 +257,7 @@ class HourglassChartModule extends AbstractModule implements ModuleChartInterfac
         $xref = $request->getQueryParams()['xref'] ?? '';
 
         $spouses    = (bool) ($request->getQueryParams()['spouses'] ?? false);
-        $individual = Individual::getInstance($xref, $tree);
+        $individual = Registry::individualFactory()->make($xref, $tree);
         $individual = Auth::checkIndividualAccess($individual, false, true);
 
         $children = $individual->spouseFamilies()->map(static function (Family $family): Collection {

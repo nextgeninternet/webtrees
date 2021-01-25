@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -31,6 +31,9 @@ use Fisharebest\Webtrees\Date\JulianDate;
 use Fisharebest\Webtrees\Date\RomanDate;
 
 use function app;
+use function trigger_error;
+
+use const E_USER_DEPRECATED;
 
 /**
  * A representation of GEDCOM dates and date ranges.
@@ -55,7 +58,7 @@ class Date
     public $qual2 = '';
 
     /** @var AbstractCalendarDate|null Optional second date */
-    private $date2 = null;
+    private $date2;
 
     /** @var string Optional text, as included with an INTerpreted date */
     private $text = '';
@@ -477,9 +480,13 @@ class Date
      * @param Date $d2
      *
      * @return int
+     *
+     * @deprecated since 2.0.4.  Will be removed in 2.1.0
      */
     public static function getAgeYears(Date $d1, Date $d2): int
     {
+        trigger_error('Date::getAgeYears() is deprecated. Use class Age instead.', E_USER_DEPRECATED);
+
         if (self::compare($d1, $d2) === 0) {
             // Overlapping dates
             $jd = $d1->minimumJulianDay();
@@ -502,9 +509,13 @@ class Date
      * @param Date $d2
      *
      * @return int
+     *
+     * @deprecated since 2.0.4.  Will be removed in 2.1.0
      */
     public static function getAgeDays(Date $d1, Date $d2): int
     {
+        trigger_error('Date::getAgeDays() is deprecated. Use class Age instead.', E_USER_DEPRECATED);
+
         if ($d2->maximumJulianDay() >= $d1->minimumJulianDay() && $d2->minimumJulianDay() <= $d1->maximumJulianDay()) {
             // Overlapping dates
             $jd = $d1->minimumJulianDay();
@@ -528,9 +539,13 @@ class Date
      * @param Date|null $d2
      *
      * @return string
+     *
+     * @deprecated since 2.0.4.  Will be removed in 2.1.0
      */
     public static function getAge(Date $d1, Date $d2 = null): string
     {
+        trigger_error('Date::getAge() is deprecated. Use class Age instead.', E_USER_DEPRECATED);
+
         if ($d2 instanceof self) {
             if ($d2->maximumJulianDay() >= $d1->minimumJulianDay() && $d2->minimumJulianDay() <= $d1->maximumJulianDay()) {
                 // Overlapping dates
@@ -566,9 +581,13 @@ class Date
      * @param Date|null $d2
      *
      * @return string
+     *
+     * @deprecated since 2.0.4.  Will be removed in 2.1.0
      */
     public static function getAgeGedcom(Date $d1, Date $d2 = null): string
     {
+        trigger_error('Date::getAgeGedcom() is deprecated. Use class Age instead.', E_USER_DEPRECATED);
+
         if ($d2 === null) {
             return $d1->date1->getAgeFull(Carbon::now()->julianDay());
         }
@@ -587,8 +606,8 @@ class Date
     /**
      * Compare two dates, so they can be sorted.
      *
-     * return <0 if $a<$b
-     * return >0 if $b>$a
+     * return -1 if $a<$b
+     * return +1 if $b>$a
      * return  0 if dates same/overlap
      * BEF/AFT sort as the day before/after
      *

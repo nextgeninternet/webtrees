@@ -1,16 +1,19 @@
 <?php
 
-use Fisharebest\Webtrees\Functions\FunctionsEdit;
+use Fisharebest\Webtrees\Auth;
+use Fisharebest\Webtrees\Date;
 use Fisharebest\Webtrees\Http\RequestHandlers\ControlPanel;
+use Fisharebest\Webtrees\Http\RequestHandlers\ManageTrees;
+use Fisharebest\Webtrees\Http\RequestHandlers\TreePreferencesAction;
 use Fisharebest\Webtrees\I18N;
 
 ?>
 
-<?= view('components/breadcrumbs', ['links' => [route(ControlPanel::class) => I18N::translate('Control panel'), route('manage-trees', ['tree' => $tree->name()]) => I18N::translate('Manage family trees'), $title]]) ?>
+<?= view('components/breadcrumbs', ['links' => [route(ControlPanel::class) => I18N::translate('Control panel'), route(ManageTrees::class, ['tree' => $tree->name()]) => I18N::translate('Manage family trees'), $title]]) ?>
 
 <h1><?= $title ?></h1>
 
-<form method="post" action="<?= e(route('admin-trees-preferences-update', ['tree' => $tree->name()])) ?>" class="form-horizontal">
+<form method="post" action="<?= e(route(TreePreferencesAction::class, ['tree' => $tree->name()])) ?>" class="form-horizontal">
     <?= csrf_field() ?>
 
     <h3><?= I18N::translate('General') ?></h3>
@@ -59,25 +62,6 @@ use Fisharebest\Webtrees\I18N;
         </div>
     </div>
 
-    <!-- LANGUAGE -->
-    <div class="row form-group">
-        <label class="col-sm-3 col-form-label" for="LANGUAGE">
-            <?= /* I18N: A configuration setting */ I18N::translate('Language') ?>
-        </label>
-        <div class="col-sm-9">
-            <select id="LANGUAGE" name="LANGUAGE" class="form-control">
-                <?php foreach (I18N::activeLocales() as $active_locale) : ?>
-                    <option value="<?= $active_locale->languageTag() ?>" <?= $tree->getPreference('LANGUAGE') === $active_locale->languageTag() ? 'selected' : '' ?>>
-                        <?= $active_locale->endonym() ?>
-                    </option>
-                <?php endforeach ?>
-            </select>
-            <p class="small text-muted">
-                <?= /* I18N: Help text for the “Language” configuration setting */ I18N::translate('If a visitor to the website has not selected a preferred language in their browser preferences, or they have selected an unsupported language, then this language will be used. Typically this applies to search engines.') ?>
-            </p>
-        </div>
-    </div>
-
     <!-- PEDIGREE_ROOT_ID -->
     <div class="row form-group">
         <label class="col-sm-3 col-form-label" for="PEDIGREE_ROOT_ID">
@@ -106,10 +90,10 @@ use Fisharebest\Webtrees\I18N;
             <div class="col-sm-9">
                 <div class="row">
                     <div class="col-sm-6" style="padding-left: 0;">
-                        <?= view('components/select', ['name' => 'CALENDAR_FORMAT0', 'selected' => $calendar_formats[0], 'options' => FunctionsEdit::optionsCalendarConversions()]) ?>
+                        <?= view('components/select', ['name' => 'CALENDAR_FORMAT0', 'selected' => $calendar_formats[0], 'options' => ['none' => I18N::translate('No calendar conversion')] + Date::calendarNames()]) ?>
                     </div>
                     <div class="col-sm-6" style="padding-right: 0;">
-                        <?= view('components/select', ['name' => 'CALENDAR_FORMAT1', 'selected' => $calendar_formats[1], 'options' => FunctionsEdit::optionsCalendarConversions()]) ?>
+                        <?= view('components/select', ['name' => 'CALENDAR_FORMAT1', 'selected' => $calendar_formats[1], 'options' => ['none' => I18N::translate('No calendar conversion')] + Date::calendarNames()]) ?>
                     </div>
                 </div>
                 <p class="small text-muted">
@@ -149,7 +133,7 @@ use Fisharebest\Webtrees\I18N;
         </label>
         <div class="col-sm-9">
             <select id="CONTACT_USER_ID" name="CONTACT_USER_ID" class="form-control">
-                <option value=""></option>
+                <option value="">&nbsp;</option>
                 <?php foreach ($members as $member) : ?>
                     <option value="<?= $member->id() ?>" <?= (int) $tree->getPreference('CONTACT_USER_ID') === $member->id() ? 'selected' : '' ?>>
                         <?= e($member->realName()) ?> - <?= e($member->userName()) ?>
@@ -169,7 +153,7 @@ use Fisharebest\Webtrees\I18N;
         </label>
         <div class="col-sm-9">
             <select id="WEBMASTER_USER_ID" name="WEBMASTER_USER_ID" class="form-control">
-                <option value=""></option>
+                <option value="">&nbsp;</option>
                 <?php foreach ($members as $member) : ?>
                     <option value="<?= $member->id() ?>" <?= (int) $tree->getPreference('WEBMASTER_USER_ID') === $member->id() ? 'selected' : '' ?>>
                         <?= e($member->realName()) ?> - <?= e($member->userName()) ?>
@@ -219,7 +203,7 @@ use Fisharebest\Webtrees\I18N;
                 value="<?= e($tree->getPreference('META_DESCRIPTION')) ?>"
             >
             <p class="small text-muted">
-                <?= /* I18N: Help text for the “Description META tag” configuration setting */ I18N::translate('The value to place in the “meta description” tag in the HTML page header. Leave this field empty to use the name of the family tree.') ?>
+                <?= /* I18N: Help text for the “Description META tag” configuration setting */ I18N::translate('Search engines may use this description of your site in their search results.') ?>
             </p>
         </div>
     </div>
@@ -270,7 +254,7 @@ use Fisharebest\Webtrees\I18N;
                 <?= /* I18N: A configuration setting */ I18N::translate('Show a download link in the media viewer') ?>
             </legend>
             <div class="col-sm-9">
-                <?= view('components/select', ['name' => 'SHOW_MEDIA_DOWNLOAD', 'selected' => $tree->getPreference('SHOW_MEDIA_DOWNLOAD'), 'options' => FunctionsEdit::optionsAccessLevels()]) ?>
+                <?= view('components/select', ['name' => 'SHOW_MEDIA_DOWNLOAD', 'selected' => $tree->getPreference('SHOW_MEDIA_DOWNLOAD'), 'options' => Auth::accessLevelNames()]) ?>
                 <p class="small text-muted">
                     <?= /* I18N: Help text for the “Show a download link in the media viewer” configuration setting */ I18N::translate('This option will make it easier for users to download images.') ?>
                 </p>
@@ -318,7 +302,7 @@ use Fisharebest\Webtrees\I18N;
             <?= I18N::translate('Images without watermarks') ?>
         </label>
         <div class="col-sm-9">
-            <?= view('components/select', ['name' => 'SHOW_NO_WATERMARK', 'selected' => $tree->getPreference('SHOW_NO_WATERMARK'), 'options' => FunctionsEdit::optionsAccessLevels()]) ?>
+            <?= view('components/select', ['name' => 'SHOW_NO_WATERMARK', 'selected' => $tree->getPreference('SHOW_NO_WATERMARK'), 'options' => Auth::accessLevelNames()]) ?>
             <p class="small text-muted">
                 <?= /* I18N: Help text for the “Images without watermarks” configuration setting */ I18N::translate('Watermarks are optional and normally shown just to visitors.') ?>
             </p>
@@ -509,7 +493,7 @@ use Fisharebest\Webtrees\I18N;
                 <div class="form-check">
                     <label for="_DEAT_GPAR">
                         <input name="SHOW_RELATIVES_EVENTS[]" type="checkbox" id="_DEAT_GPAR" value="_DEAT_GPAR" <?= in_array('_DEAT_GPAR', $relatives_events, true) ? 'checked' : '' ?>>
-                        <?= I18N::translate('Death of a grand-parent') ?>
+                        <?= I18N::translate('Death of a grandparent') ?>
                     </label>
                 </div>
             </div>
@@ -581,8 +565,8 @@ use Fisharebest\Webtrees\I18N;
             <div class="col-sm-9">
                 <?= /* I18N: The placeholders are edit controls. Show the [first/last] [1/2/3/4/5] parts of a place name */ I18N::translate(
                     'Show the %1$s %2$s parts of a place name.',
-                    view('components/select', ['name' => 'SHOW_PEDIGREE_PLACES_SUFFIX', 'selected' => $tree->getPreference('SHOW_PEDIGREE_PLACES'), 'options' => ['0' => I18N::translateContext('Show the [first/last] [N] parts of a place name.', 'first'), '1' => I18N::translateContext('Show the [first/last] [N] parts of a place name.', 'last')]]),
-                    view('components/select', ['name' => 'SHOW_PEDIGREE_PLACES', 'selected' => $tree->getPreference('SHOW_PEDIGREE_PLACES'), 'options' => FunctionsEdit::numericOptions(range(1, 9))])
+                    view('components/select', ['name' => 'SHOW_PEDIGREE_PLACES_SUFFIX', 'selected' => $tree->getPreference('SHOW_PEDIGREE_PLACES_SUFFIX'), 'options' => ['0' => I18N::translateContext('Show the [first/last] [N] parts of a place name.', 'first'), '1' => I18N::translateContext('Show the [first/last] [N] parts of a place name.', 'last')]]),
+                    view('components/select-number', ['name' => 'SHOW_PEDIGREE_PLACES', 'selected' => $tree->getPreference('SHOW_PEDIGREE_PLACES'), 'options' => range(1, 9)])
                 ) ?>
                 <p class="small text-muted">
                     <?= /* I18N: Help text for the “Abbreviate place names” configuration setting */ I18N::translate('Place names are frequently too long to fit on charts, lists, etc. They can be abbreviated by showing just the first few parts of the name, such as <i>village, county</i>, or the last few part of it, such as <i>region, country</i>.') ?>
@@ -946,7 +930,7 @@ use Fisharebest\Webtrees\I18N;
                 <?= view('icons/save') ?>
                 <?= I18N::translate('save') ?>
             </button>
-            <a class="btn btn-secondary" href="<?= e(route('manage-trees', ['tree' => $tree->name()])) ?>">
+            <a class="btn btn-secondary" href="<?= e(route(ManageTrees::class, ['tree' => $tree->name()])) ?>">
         <?= view('icons/cancel') ?>
                 <?= I18N::translate('cancel') ?>
             </a>

@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -28,7 +28,6 @@ use Fisharebest\Webtrees\Module\ModuleInterface;
 use Fisharebest\Webtrees\Services\ModuleService;
 use Fisharebest\Webtrees\TestCase;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 
 use function response;
 
@@ -42,12 +41,12 @@ class ModuleActionTest extends TestCase
      */
     public function testModuleAction(): void
     {
-        $module_service = $this->createMock(ModuleService::class);
+        $module_service = self::createMock(ModuleService::class);
         $module_service
-            ->expects($this->once())
+            ->expects(self::once())
             ->method('findByName')
             ->with('test')
-            ->willReturn($this->dummyModule());
+            ->willReturn($this->fooModule());
 
         $user     = new GuestUser();
         $request  = self::createRequest()
@@ -57,8 +56,8 @@ class ModuleActionTest extends TestCase
         $handler  = new ModuleAction($module_service);
         $response = $handler->handle($request);
 
-        $this->assertSame(StatusCodeInterface::STATUS_OK, $response->getStatusCode());
-        $this->assertSame('It works!', (string) $response->getBody());
+        self::assertSame(StatusCodeInterface::STATUS_OK, $response->getStatusCode());
+        self::assertSame('It works!', (string) $response->getBody());
     }
 
     /**
@@ -69,12 +68,12 @@ class ModuleActionTest extends TestCase
         $this->expectException(HttpNotFoundException::class);
         $this->expectExceptionMessage('Method getTestingAction() not found in test');
 
-        $module_service = $this->createMock(ModuleService::class);
+        $module_service = self::createMock(ModuleService::class);
         $module_service
-            ->expects($this->once())
+            ->expects(self::once())
             ->method('findByName')
             ->with('test')
-            ->willReturn($this->dummyModule());
+            ->willReturn($this->fooModule());
 
         $user    = new GuestUser();
         $request = self::createRequest()
@@ -93,9 +92,9 @@ class ModuleActionTest extends TestCase
         $this->expectException(HttpNotFoundException::class);
         $this->expectExceptionMessage('Module test does not exist');
 
-        $module_service = $this->createMock(ModuleService::class);
+        $module_service = self::createMock(ModuleService::class);
         $module_service
-            ->expects($this->once())
+            ->expects(self::once())
             ->method('findByName')
             ->with('test')
             ->willReturn(null);
@@ -117,12 +116,12 @@ class ModuleActionTest extends TestCase
         $this->expectException(HttpAccessDeniedException::class);
         $this->expectExceptionMessage('Admin only action');
 
-        $module_service = $this->createMock(ModuleService::class);
+        $module_service = self::createMock(ModuleService::class);
         $module_service
-            ->expects($this->once())
+            ->expects(self::once())
             ->method('findByName')
             ->with('test')
-            ->willReturn($this->dummyModule());
+            ->willReturn($this->fooModule());
 
         $user    = new GuestUser();
         $request = self::createRequest()
@@ -136,10 +135,10 @@ class ModuleActionTest extends TestCase
     /**
      * @return ModuleInterface
      */
-    private function dummyModule(): ModuleInterface
+    private function fooModule(): ModuleInterface
     {
         return new class extends AbstractModule {
-            public function getTestAction(ServerRequestInterface $request): ResponseInterface
+            public function getTestAction(): ResponseInterface
             {
                 return response('It works!');
             }

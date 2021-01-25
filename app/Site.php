@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2021 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -21,6 +21,7 @@ namespace Fisharebest\Webtrees;
 
 use Illuminate\Database\Capsule\Manager as DB;
 
+use function in_array;
 use function mb_substr;
 
 /**
@@ -28,10 +29,20 @@ use function mb_substr;
  */
 class Site
 {
+    // The following preferences contain sensitive data, and should not be logged.
+    private const SENSITIVE_PREFERENCES = [
+        'SMTP_AUTH_PASS'
+    ];
+
+    // The following preferences contain unimportant data, and should not be logged.
+    private const UNIMPORTANT_PREFERENCES = [
+        'next_xref'
+    ];
+
     /**
      * Everything from the wt_site_setting table.
      *
-     * @var array
+     * @var array<string,string>
      */
     public static $preferences = [];
 
@@ -78,7 +89,13 @@ class Site
 
             self::$preferences[$setting_name] = $setting_value;
 
-            Log::addConfigurationLog('Site preference "' . $setting_name . '" set to "' . $setting_value . '"', null);
+            if (in_array($setting_name, self::SENSITIVE_PREFERENCES, true)) {
+                $setting_value = '********';
+            }
+
+            if (!in_array($setting_name, self::UNIMPORTANT_PREFERENCES, true)) {
+                Log::addConfigurationLog('Site preference "' . $setting_name . '" set to "' . $setting_value . '"', null);
+            }
         }
     }
 }

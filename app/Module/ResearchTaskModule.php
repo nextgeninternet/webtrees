@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -21,6 +21,7 @@ namespace Fisharebest\Webtrees\Module;
 
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Carbon;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Family;
 use Fisharebest\Webtrees\GedcomRecord;
 use Fisharebest\Webtrees\I18N;
@@ -42,6 +43,10 @@ class ResearchTaskModule extends AbstractModule implements ModuleBlockInterface
     private const DEFAULT_SHOW_OTHER      = '1';
     private const DEFAULT_SHOW_UNASSIGNED = '1';
     private const DEFAULT_SHOW_FUTURE     = '1';
+
+    // Pagination
+    private const LIMIT_LOW  = 10;
+    private const LIMIT_HIGH = 20;
 
     /**
      * How should this module be identified in the control panel, etc.?
@@ -89,7 +94,7 @@ class ResearchTaskModule extends AbstractModule implements ModuleBlockInterface
 
         $records = $individuals->merge($families);
 
-        $tasks = [];
+        $tasks = new Collection();
 
         foreach ($records as $record) {
             foreach ($record->facts(['_TODO']) as $task) {
@@ -97,13 +102,13 @@ class ResearchTaskModule extends AbstractModule implements ModuleBlockInterface
 
                 if ($user_name === Auth::user()->userName()) {
                     // Tasks belonging to us.
-                    $tasks[] = $task;
+                    $tasks->add($task);
                 } elseif ($user_name === '' && $show_unassigned) {
                     // Tasks belonging to nobody.
-                    $tasks[] = $task;
+                    $tasks->add($task);
                 } elseif ($user_name !== '' && $show_other) {
                     // Tasks belonging to others.
-                    $tasks[] = $task;
+                    $tasks->add($task);
                 }
             }
         }
@@ -111,7 +116,11 @@ class ResearchTaskModule extends AbstractModule implements ModuleBlockInterface
         if ($records->isEmpty()) {
             $content = '<p>' . I18N::translate('There are no research tasks in this family tree.') . '</p>';
         } else {
-            $content = view('modules/todo/research-tasks', ['tasks' => $tasks]);
+            $content = view('modules/todo/research-tasks', [
+                'limit_low'  => self::LIMIT_LOW,
+                'limit_high' => self::LIMIT_HIGH,
+                'tasks'      => $tasks,
+            ]);
         }
 
         if ($context !== self::CONTEXT_EMBED) {
@@ -217,7 +226,7 @@ class ResearchTaskModule extends AbstractModule implements ModuleBlockInterface
             ->select(['families.*'])
             ->distinct()
             ->get()
-            ->map(Family::rowMapper($tree))
+            ->map(Registry::familyFactory()->mapper($tree))
             ->filter(GedcomRecord::accessFilter());
     }
 
@@ -241,7 +250,7 @@ class ResearchTaskModule extends AbstractModule implements ModuleBlockInterface
             ->select(['individuals.*'])
             ->distinct()
             ->get()
-            ->map(Individual::rowMapper($tree))
+            ->map(Registry::individualFactory()->mapper($tree))
             ->filter(GedcomRecord::accessFilter());
     }
 }

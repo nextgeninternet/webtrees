@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -22,8 +22,6 @@ namespace Fisharebest\Webtrees\Http\Middleware;
 use Fig\Http\Message\StatusCodeInterface;
 use Fisharebest\Webtrees\Services\HousekeepingService;
 use Fisharebest\Webtrees\TestCase;
-use League\Flysystem\Adapter\NullAdapter;
-use League\Flysystem\Filesystem;
 use Psr\Http\Server\RequestHandlerInterface;
 
 use function response;
@@ -40,18 +38,13 @@ class DoHousekeepingTest extends TestCase
      */
     public function testMiddleware(): void
     {
-        $data_filesystem = new Filesystem(new NullAdapter());
-        $root_filesystem = new Filesystem(new NullAdapter());
-
-        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler = self::createMock(RequestHandlerInterface::class);
         $handler->method('handle')->willReturn(response());
 
-        $request    = self::createRequest()
-            ->withAttribute('filesystem.data', $data_filesystem)
-            ->withAttribute('filesystem.root', $root_filesystem);
+        $request    = self::createRequest();
         $middleware = new DoHousekeeping(new HousekeepingService());
         $response   = $middleware->process($request, $handler);
 
-        $this->assertSame(StatusCodeInterface::STATUS_NO_CONTENT, $response->getStatusCode());
+        self::assertSame(StatusCodeInterface::STATUS_NO_CONTENT, $response->getStatusCode());
     }
 }

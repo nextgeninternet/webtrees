@@ -30,11 +30,6 @@ trait ModuleSidebarTrait
     protected $sidebar_order;
 
     /**
-     * @return string
-     */
-    abstract public function title(): string;
-
-    /**
      * The text that appears on the sidebar's title.
      *
      * @return string
@@ -68,7 +63,7 @@ trait ModuleSidebarTrait
 
 
     /**
-     * The default position for this sdiebar.
+     * The default position for this sidebar.
      *
      * @return int
      */

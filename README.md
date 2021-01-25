@@ -31,7 +31,7 @@ Further documentation is available at [wiki.webtrees.net](https://wiki.webtrees.
 ## License
 
 * **webtrees: online genealogy**
-* Copyright 2019 webtrees development team
+* Copyright 2021 webtrees development team
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -61,6 +61,8 @@ webtrees follows the [PHP Standards Recommendations](https://www.php-fig.org/psr
 * [PSR-17](https://www.php-fig.org/psr/psr-17) - HTTP Factories
 
 We do not currently use [PSR-3 (logging)](https://www.php-fig.org/psr/psr-3) - but we plan to do so in the future.
+
+For JavaScript, we use [semistandard](https://github.com/standard/semistandard).
 
 ## Introduction
 

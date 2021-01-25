@@ -3,6 +3,7 @@
 use Fisharebest\Webtrees\Http\RequestHandlers\EditRawRecordAction;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\View;
+use Fisharebest\Webtrees\Webtrees;
 
 ?>
 
@@ -15,32 +16,27 @@ use Fisharebest\Webtrees\View;
         <?= I18N::translate('This page allows you to bypass the usual forms, and edit the underlying data directly. It is an advanced option, and you should not use it unless you understand the GEDCOM format. If you make a mistake here, it can be difficult to fix.') ?>
     </p>
     <p class="text-muted small">
-        <?= /* I18N: %s is a URL */ I18N::translate('You can download a copy of the GEDCOM specification from %s.', '<a href="https://wiki.webtrees.net/w/images-en/Ged551-5.pdf">https://wiki.webtrees.net/w/images-en/Ged551-5.pdf</a>') ?>
+        <?= /* I18N: %s is a URL */ I18N::translate('You can download a copy of the GEDCOM specification from %s.', '<a href="' . e(Webtrees::GEDCOM_PDF) . '">' . e(Webtrees::GEDCOM_PDF) . '</a>') ?>
     </p>
 
     <div class="card">
         <label class="card-header py-1 px-2" for="fact0">
             <?= $record->fullName() ?>
         </label>
-        <div class="card-body form-control py-1 px-2">
-            <textarea class="card-body form-control py-1 px-2" id="fact0" rows="1" dir="ltr" readonly>0 @<?= e($record->xref()) ?>@ <?= e($record::RECORD_TYPE) ?></textarea>
-        </div>
+        <textarea class="card-body form-control py-1 px-2" id="fact0" rows="1" dir="ltr" readonly disabled><?= e($level0) ?></textarea>
     </div>
 
-    <div id="wt-sortable-list">
-        <?php foreach ($record->facts() as $fact) : ?>
-            <?php if (!$fact->isPendingDeletion()) : ?>
-                <div class="card my-2">
-                    <label class="card-header py-1 px-2 d-flex" for="fact-<?= e($fact->id()) ?>">
-                        <span class="drag-handle">
-                            <?= view('icons/drag-handle') ?>
-                        </span>
-                        <?= $fact->summary() ?>
-                    </label>
-                    <input type="hidden" name="fact_id[]" value="<?= e($fact->id()) ?>">
-                    <textarea class="card-body form-control py-1 px-2" dir="ltr" id="fact-<?= e($fact->id()) ?>" name="fact[]" rows="<?= 1 + preg_match_all('/\n/', $fact->gedcom()) ?>"><?= e($fact->gedcom()) ?></textarea>
+    <div class="wt-sortable-list">
+        <?php foreach ($record->facts([], false, null, true) as $fact) : ?>
+            <div class="card my-2 wt-sortable-item">
+                <input type="hidden" name="fact_id[]" value="<?= e($fact->id()) ?>">
+                <div class="card-header">
+                    <?= view('edit/reorder-card-header', ['title' => $fact->summary()]) ?>
                 </div>
-            <?php endif ?>
+                <label class="sr-only" for="fact-<?= e($fact->id()) ?>"><?= $fact->summary() ?></label>
+
+                <textarea class="card-body form-control py-1 px-2" dir="ltr" id="fact-<?= e($fact->id()) ?>" name="fact[]" rows="<?= 1 + preg_match_all('/\n/', $fact->gedcom()) ?>"><?= e($fact->gedcom()) ?></textarea>
+            </div>
         <?php endforeach ?>
 
         <div class="card my-2">
@@ -68,8 +64,8 @@ use Fisharebest\Webtrees\View;
 
 <?php View::push('javascript') ?>
 <script>
-    new Sortable(document.getElementById("wt-sortable-list"), {
-        handle: ".drag-handle",
+    new Sortable(document.querySelector(".wt-sortable-list"), {
+        handle: ".card-header",
     });
 </script>
 <?php View::endpush() ?>

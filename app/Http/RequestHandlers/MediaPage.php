@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -24,10 +24,10 @@ use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Fact;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\Media;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Services\ClipboardService;
 use Fisharebest\Webtrees\Tree;
 use Illuminate\Support\Collection;
-use League\Flysystem\FilesystemInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -63,8 +63,7 @@ class MediaPage implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $data_filesystem = $request->getAttribute('filesystem.data');
-        assert($data_filesystem instanceof FilesystemInterface);
+        $data_filesystem = Registry::filesystem()->data();
 
         $tree = $request->getAttribute('tree');
         assert($tree instanceof Tree);
@@ -72,7 +71,7 @@ class MediaPage implements RequestHandlerInterface
         $xref = $request->getAttribute('xref');
         assert(is_string($xref));
 
-        $media = Media::getInstance($xref, $tree);
+        $media = Registry::mediaFactory()->make($xref, $tree);
         $media = Auth::checkMediaAccess($media);
 
         // Redirect to correct xref/slug
@@ -81,17 +80,18 @@ class MediaPage implements RequestHandlerInterface
         }
 
         return $this->viewResponse('media-page', [
-            'clipboard_facts' => $this->clipboard_service->pastableFacts($media, new Collection()),
-            'data_filesystem' => $data_filesystem,
-            'families'        => $media->linkedFamilies('OBJE'),
-            'facts'           => $this->facts($media),
-            'individuals'     => $media->linkedIndividuals('OBJE'),
-            'media'           => $media,
-            'meta_robots'     => 'index,follow',
-            'notes'           => $media->linkedNotes('OBJE'),
-            'sources'         => $media->linkedSources('OBJE'),
-            'title'           => $media->fullName(),
-            'tree'            => $tree,
+            'clipboard_facts'  => $this->clipboard_service->pastableFacts($media, new Collection()),
+            'data_filesystem'  => $data_filesystem,
+            'families'         => $media->linkedFamilies('OBJE'),
+            'facts'            => $this->facts($media),
+            'individuals'      => $media->linkedIndividuals('OBJE'),
+            'media'            => $media,
+            'meta_description' => '',
+            'meta_robots'      => 'index,follow',
+            'notes'            => $media->linkedNotes('OBJE'),
+            'sources'          => $media->linkedSources('OBJE'),
+            'title'            => $media->fullName(),
+            'tree'             => $tree,
         ]);
     }
 
@@ -104,7 +104,7 @@ class MediaPage implements RequestHandlerInterface
     {
         return $record->facts()
             ->filter(static function (Fact $fact): bool {
-                return $fact->getTag() !== 'FILE';
+                return $fact->tag() !== 'OBJE:FILE';
             });
     }
 }

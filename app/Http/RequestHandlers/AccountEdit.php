@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2021 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -21,11 +21,12 @@ namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
 use DateTimeZone;
 use Fisharebest\Webtrees\Auth;
-use Fisharebest\Webtrees\Functions\FunctionsEdit;
+use Fisharebest\Webtrees\Contracts\UserInterface;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\I18N;
-use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Module\ModuleLanguageInterface;
+use Fisharebest\Webtrees\Registry;
+use Fisharebest\Webtrees\Services\MessageService;
 use Fisharebest\Webtrees\Services\ModuleService;
 use Fisharebest\Webtrees\Tree;
 use Fisharebest\Webtrees\User;
@@ -42,16 +43,21 @@ class AccountEdit implements RequestHandlerInterface
 {
     use ViewResponseTrait;
 
+    /** @var MessageService */
+    private $message_service;
+
     /** @var ModuleService */
     private $module_service;
 
     /**
      * AccountEdit constructor.
      *
-     * @param ModuleService $module_service
+     * @param MessageService $message_service
+     * @param ModuleService  $module_service
      */
-    public function __construct(ModuleService $module_service)
+    public function __construct(MessageService $message_service, ModuleService $module_service)
     {
+        $this->message_service = $message_service;
         $this->module_service = $module_service;
     }
 
@@ -68,8 +74,8 @@ class AccountEdit implements RequestHandlerInterface
         assert($user instanceof User);
 
         if ($tree instanceof Tree) {
-            $my_individual_record = Individual::getInstance($tree->getUserPreference(Auth::user(), User::PREF_TREE_ACCOUNT_XREF), $tree);
-            $default_individual   = Individual::getInstance($tree->getUserPreference(Auth::user(), User::PREF_TREE_DEFAULT_XREF), $tree);
+            $my_individual_record = Registry::individualFactory()->make($tree->getUserPreference(Auth::user(), UserInterface::PREF_TREE_ACCOUNT_XREF), $tree);
+            $default_individual   = Registry::individualFactory()->make($tree->getUserPreference(Auth::user(), UserInterface::PREF_TREE_DEFAULT_XREF), $tree);
         } else {
             $my_individual_record = null;
             $default_individual   = null;
@@ -82,13 +88,13 @@ class AccountEdit implements RequestHandlerInterface
                 return [$locale->languageTag() => $locale->endonym()];
             });
 
-        $show_delete_option = $user->getPreference(User::PREF_IS_ADMINISTRATOR) !== '1';
+        $show_delete_option = $user->getPreference(UserInterface::PREF_IS_ADMINISTRATOR) !== '1';
         $timezone_ids       = DateTimeZone::listIdentifiers();
         $timezones          = array_combine($timezone_ids, $timezone_ids);
         $title              = I18N::translate('My account');
 
         return $this->viewResponse('edit-account-page', [
-            'contact_methods'      => FunctionsEdit::optionsContactMethods(),
+            'contact_methods'      => $this->message_service->contactMethods(),
             'default_individual'   => $default_individual,
             'languages'            => $languages->all(),
             'my_individual_record' => $my_individual_record,

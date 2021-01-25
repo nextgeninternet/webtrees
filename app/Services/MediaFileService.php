@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Services;
 
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\FlashMessages;
 use Fisharebest\Webtrees\GedcomTag;
 use Fisharebest\Webtrees\I18N;
@@ -42,12 +43,12 @@ use function ini_get;
 use function intdiv;
 use function min;
 use function pathinfo;
-use function preg_match;
+use function preg_replace;
 use function sha1;
 use function sort;
-use function str_replace;
-use function strpos;
+use function str_contains;
 use function strtolower;
+use function strtr;
 use function substr;
 use function trim;
 
@@ -67,6 +68,11 @@ class MediaFileService
         'none',
         'privacy',
         'confidential',
+    ];
+
+    public const EXTENSION_TO_FORM = [
+        'jpg' => 'jpeg',
+        'tif' => 'tiff',
     ];
 
     /**
@@ -95,15 +101,12 @@ class MediaFileService
         $number = (int) $size;
 
         switch (substr($size, -1)) {
-            case 't':
-            case 'T':
-                return $number * 1024 ** 4;
             case 'g':
             case 'G':
-                return $number * 1024 ** 3;
+                return $number * 1073741824;
             case 'm':
             case 'M':
-                return $number * 1024 ** 2;
+                return $number * 1048576;
             case 'k':
             case 'K':
                 return $number * 1024;
@@ -117,7 +120,7 @@ class MediaFileService
      *
      * @param string $current
      *
-     * @return array
+     * @return array<string,string>
      */
     public function mediaTypes($current = ''): array
     {
@@ -134,7 +137,7 @@ class MediaFileService
      * @param Tree                $tree
      * @param FilesystemInterface $data_filesystem
      *
-     * @return array
+     * @return array<string>
      */
     public function unusedFiles(Tree $tree, FilesystemInterface $data_filesystem): array
     {
@@ -151,8 +154,8 @@ class MediaFileService
             // Older versions of webtrees used a couple of special folders.
             return
                 $item['type'] === 'file' &&
-                strpos($item['path'], '/thumbs/') === false &&
-                strpos($item['path'], '/watermarks/') === false;
+                !str_contains($item['path'], '/thumbs/') &&
+                !str_contains($item['path'], '/watermarks/');
         });
 
         $disk_files = array_map(static function (array $item): string {
@@ -179,8 +182,7 @@ class MediaFileService
         $tree = $request->getAttribute('tree');
         assert($tree instanceof Tree);
 
-        $data_filesystem = $request->getAttribute('filesystem.data');
-        assert($data_filesystem instanceof FilesystemInterface);
+        $data_filesystem = Registry::filesystem()->data();
 
         $params        = (array) $request->getParsedBody();
         $file_location = $params['file_location'];
@@ -189,7 +191,7 @@ class MediaFileService
             case 'url':
                 $remote = $params['remote'];
 
-                if (strpos($remote, '://') !== false) {
+                if (str_contains($remote, '://')) {
                     return $remote;
                 }
 
@@ -217,15 +219,15 @@ class MediaFileService
                 }
 
                 // The filename
-                $new_file = str_replace('\\', '/', $new_file);
-                if ($new_file !== '' && strpos($new_file, '/') === false) {
+                $new_file = strtr($new_file, ['\\' => '/']);
+                if ($new_file !== '' && !str_contains($new_file, '/')) {
                     $file = $new_file;
                 } else {
                     $file = $uploaded_file->getClientFilename();
                 }
 
                 // The folder
-                $folder = str_replace('\\', '/', $folder);
+                $folder = strtr($folder, ['\\' => '/']);
                 $folder = trim($folder, '/');
                 if ($folder !== '') {
                     $folder .= '/';
@@ -239,7 +241,7 @@ class MediaFileService
                 }
 
                 try {
-                    $tree->mediaFilesystem($data_filesystem)->writeStream($folder . $file, $uploaded_file->getStream()->detach());
+                    $tree->mediaFilesystem($data_filesystem)->putStream($folder . $file, $uploaded_file->getStream()->detach());
 
                     return $folder . $file;
                 } catch (RuntimeException | InvalidArgumentException $ex) {
@@ -256,25 +258,38 @@ class MediaFileService
      * @param string $file
      * @param string $type
      * @param string $title
+     * @param string $note
      *
      * @return string
      */
-    public function createMediaFileGedcom(string $file, string $type, string $title): string
+    public function createMediaFileGedcom(string $file, string $type, string $title, string $note): string
     {
-        if (preg_match('/\.([a-z0-9]+)/i', $file, $match)) {
-            $extension = strtolower($match[1]);
-            $extension = str_replace('jpg', 'jpeg', $extension);
-            $extension = ' ' . $extension;
-        } else {
-            $extension = '';
-        }
+        // Tidy non-printing characters
+        $type  = trim(preg_replace('/\s+/', ' ', $type));
+        $title = trim(preg_replace('/\s+/', ' ', $title));
 
         $gedcom = '1 FILE ' . $file;
-        if ($type !== '') {
-            $gedcom .= "\n2 FORM" . $extension . "\n3 TYPE " . $type;
+
+        $format = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        $format = self::EXTENSION_TO_FORM[$format] ?? $format;
+
+        if ($format !== '') {
+            $gedcom .= "\n2 FORM " . $format;
+        } elseif ($type !== '') {
+            $gedcom .= "\n2 FORM";
         }
+
+        if ($type !== '') {
+            $gedcom .= "\n3 TYPE " . $type;
+        }
+
         if ($title !== '') {
             $gedcom .= "\n2 TITL " . $title;
+        }
+
+        if ($note !== '') {
+            // Convert HTML line endings to GEDCOM continuations
+            $gedcom .= "\n1 NOTE " . strtr($note, ["\r\n" => "\n2 CONT "]);
         }
 
         return $gedcom;
@@ -297,8 +312,8 @@ class MediaFileService
             ->filter(static function (array $metadata): bool {
                 return
                     $metadata['type'] === 'file' &&
-                    strpos($metadata['path'], '/thumbs/') === false &&
-                    strpos($metadata['path'], '/watermark/') === false;
+                    !str_contains($metadata['path'], '/thumbs/') &&
+                    !str_contains($metadata['path'], '/watermark/');
             })
             ->map(static function (array $metadata): string {
                 return $metadata['path'];
@@ -354,8 +369,9 @@ class MediaFileService
 
         $media_roots = DB::table('gedcom_setting')
             ->where('setting_name', '=', 'MEDIA_DIRECTORY')
+            ->where('gedcom_id', '>', '0')
             ->pluck('setting_value')
-            ->unique();
+            ->uniqueStrict();
 
         $disk_folders = new Collection($media_roots);
 
@@ -368,14 +384,14 @@ class MediaFileService
                     return $metadata['path'] . '/';
                 })
                 ->filter(static function (string $dir): bool {
-                    return strpos($dir, '/thumbs/') === false && strpos($dir, 'watermarks') === false;
+                    return !str_contains($dir, '/thumbs/') && !str_contains($dir, 'watermarks');
                 });
 
             $disk_folders = $disk_folders->concat($tmp);
         }
 
         return $disk_folders->concat($db_folders)
-            ->unique()
+            ->uniqueStrict()
             ->mapWithKeys(static function (string $folder): array {
                 return [$folder => $folder];
             });

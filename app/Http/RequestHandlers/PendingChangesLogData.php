@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -22,8 +22,8 @@ namespace Fisharebest\Webtrees\Http\RequestHandlers;
 use Fisharebest\Algorithm\MyersDiff;
 use Fisharebest\Webtrees\Carbon;
 use Fisharebest\Webtrees\Gedcom;
-use Fisharebest\Webtrees\GedcomRecord;
 use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Services\DatatablesService;
 use Fisharebest\Webtrees\Services\PendingChangesService;
 use Fisharebest\Webtrees\Tree;
@@ -76,14 +76,14 @@ class PendingChangesLogData implements RequestHandlerInterface
         $tree = $request->getAttribute('tree');
         assert($tree instanceof Tree);
 
-        $params = $request->getQueryParams();
+        $params         = $request->getQueryParams();
         $params['tree'] = $tree->name();
 
         $query = $this->pending_changes_service->changesQuery($params);
 
         $callback = function (stdClass $row) use ($tree): array {
-            $old_lines = explode("\n", $row->old_gedcom);
-            $new_lines = explode("\n", $row->new_gedcom);
+            $old_lines = $row->old_gedcom === '' ? [] : explode("\n", $row->old_gedcom);
+            $new_lines = $row->new_gedcom === '' ? [] : explode("\n", $row->new_gedcom);
 
             $differences = $this->myers_diff->calculate($old_lines, $new_lines);
             $diff_lines  = [];
@@ -102,7 +102,7 @@ class PendingChangesLogData implements RequestHandlerInterface
             }
 
             // Only convert valid xrefs to links
-            $record = GedcomRecord::getInstance($row->xref, $tree);
+            $record = Registry::gedcomRecordFactory()->make($row->xref, $tree);
 
             return [
                 $row->change_id,
@@ -113,7 +113,7 @@ class PendingChangesLogData implements RequestHandlerInterface
                 preg_replace_callback(
                     '/@(' . Gedcom::REGEX_XREF . ')@/',
                     static function (array $match) use ($tree): string {
-                        $record = GedcomRecord::getInstance($match[1], $tree);
+                        $record = Registry::gedcomRecordFactory()->make($match[1], $tree);
 
                         return $record ? '<a href="' . e($record->url()) . '">' . $match[0] . '</a>' : $match[0];
                     },

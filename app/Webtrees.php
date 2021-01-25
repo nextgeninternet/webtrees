@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2021 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -21,6 +21,7 @@ namespace Fisharebest\Webtrees;
 
 use Closure;
 use ErrorException;
+use Fisharebest\Webtrees\Http\Middleware\BadBotBlocker;
 use Fisharebest\Webtrees\Http\Middleware\BootModules;
 use Fisharebest\Webtrees\Http\Middleware\CheckForMaintenanceMode;
 use Fisharebest\Webtrees\Http\Middleware\ClientIp;
@@ -31,13 +32,12 @@ use Fisharebest\Webtrees\Http\Middleware\LoadRoutes;
 use Fisharebest\Webtrees\Http\Middleware\NoRouteFound;
 use Fisharebest\Webtrees\Http\Middleware\PhpEnvironment;
 use Fisharebest\Webtrees\Http\Middleware\ReadConfigIni;
+use Fisharebest\Webtrees\Http\Middleware\RegisterFactories;
 use Fisharebest\Webtrees\Http\Middleware\Router;
 use Fisharebest\Webtrees\Http\Middleware\SecurityHeaders;
 use Fisharebest\Webtrees\Http\Middleware\UpdateDatabaseSchema;
-use Fisharebest\Webtrees\Http\Middleware\UseCache;
 use Fisharebest\Webtrees\Http\Middleware\UseDatabase;
 use Fisharebest\Webtrees\Http\Middleware\UseDebugbar;
-use Fisharebest\Webtrees\Http\Middleware\UseFilesystem;
 use Fisharebest\Webtrees\Http\Middleware\UseLanguage;
 use Fisharebest\Webtrees\Http\Middleware\UseSession;
 use Fisharebest\Webtrees\Http\Middleware\UseTheme;
@@ -53,6 +53,10 @@ use Psr\Http\Message\UriFactoryInterface;
 use function app;
 use function error_reporting;
 use function set_error_handler;
+
+use const E_ALL;
+use const E_DEPRECATED;
+use const E_USER_DEPRECATED;
 
 /**
  * Definitions for the webtrees application.
@@ -82,22 +86,28 @@ class Webtrees
     public const DEBUG = self::STABILITY !== '';
 
     // We want to know about all PHP errors during development, and fewer in production.
-    public const ERROR_REPORTING = self::DEBUG ? E_ALL | E_STRICT | E_NOTICE | E_DEPRECATED : E_ALL;
+    public const ERROR_REPORTING = self::DEBUG ? E_ALL : E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED;
 
     // The name of the application.
     public const NAME = 'webtrees';
 
     // Required version of database tables/columns/indexes/etc.
-    public const SCHEMA_VERSION = 43;
+    public const SCHEMA_VERSION = 45;
 
-    // e.g. "dev", "alpha", "beta", etc.
-    public const STABILITY = 'dev';
+    // e.g. "-dev", "-alpha", "-beta", etc.
+    public const STABILITY = '-dev';
 
     // Version number
-    public const VERSION = '2.0.2' . (self::STABILITY === '' ? '' : '-') . self::STABILITY;
+    public const VERSION = '2.0.12' . self::STABILITY;
 
     // Project website.
-    public const URL = 'https://www.webtrees.net/';
+    public const URL = 'https://webtrees.net/';
+
+    // FAQ links
+    public const URL_FAQ_EMAIL = 'https://webtrees.net/faq/email';
+
+    // Project website.
+    public const GEDCOM_PDF = 'https://webtrees.net/downloads/gedcom-551.pdf';
 
     private const MIDDLEWARE = [
         PhpEnvironment::class,
@@ -107,11 +117,11 @@ class Webtrees
         BaseUrl::class,
         HandleExceptions::class,
         ClientIp::class,
+        RegisterFactories::class,
+        BadBotBlocker::class,
         UseDatabase::class,
         UseDebugbar::class,
         UpdateDatabaseSchema::class,
-        UseCache::class,
-        UseFilesystem::class,
         UseSession::class,
         UseLanguage::class,
         CheckForMaintenanceMode::class,

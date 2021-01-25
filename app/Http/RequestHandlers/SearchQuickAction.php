@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
 use Fisharebest\Webtrees\GedcomRecord;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -52,7 +53,7 @@ class SearchQuickAction implements RequestHandlerInterface
 
         // Was the search query an XREF in the current tree?
         // If so, go straight to it.
-        $record = GedcomRecord::getInstance($query, $tree);
+        $record = Registry::gedcomRecordFactory()->make($query, $tree);
 
         if ($record instanceof GedcomRecord && $record->canShow()) {
             return redirect($record->url());

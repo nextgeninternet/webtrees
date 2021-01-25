@@ -61,11 +61,6 @@ use Fisharebest\Webtrees\View;
                     <?= view('icons/add') ?>
                 </button>
             </div>
-            <div class="input-group-append">
-                <button type="button" class="btn btn-primary" id="census-assistant-head" title="<?= I18N::translate('Head of household') ?>">
-                    <?= view('icons/individual') ?>
-                </button>
-            </div>
         </div>
     </div>
 
@@ -81,10 +76,10 @@ use Fisharebest\Webtrees\View;
         <div class="input-group">
             <div class="input-group-prepend">
                 <label class="input-group-text" for="census-assistant-notes">
-                    <?= I18N::translate('Notes') ?>
+                    <?= I18N::translate('Comments') ?>
                 </label>
             </div>
-            <input class="form-control" id="census-assistant-notes" name="ca_notes">
+            <textarea class="form-control" id="census-assistant-notes" name="ca_notes" rows="3"></textarea>
         </div>
     </div>
 </div>
@@ -143,8 +138,8 @@ use Fisharebest\Webtrees\View;
     var census         = censusSelector.options[censusSelector.selectedIndex].dataset.census;
     var indi_selector  = document.querySelector('#census-assistant-individual');
     var xref           = indi_selector.options[indi_selector.selectedIndex].value;
-    var headTd         = document.querySelector('#census-assistant-table td');
-    var head           = headTd === null ? xref : headTd.innerHTML;
+    var headInput      = document.querySelector('#census-assistant-table td input');
+    var head           = headInput === null ? xref : headInput.value;
 
     let formData = new FormData();
     formData.append('census', census);
@@ -159,33 +154,7 @@ use Fisharebest\Webtrees\View;
     })
     .then(response => response.text())
     .then(function (text) {
-        document.querySelector('#census-assistant-table tbody').innerHTML += text;
-    });
-
-    return false;
-  }
-
-  // Set the currently selected individual as the head of household
-  function censusAssistantHead() {
-    var censusSelector = document.querySelector('#census-selector');
-    var census         = censusSelector.options[censusSelector.selectedIndex].dataset.census;
-    var indi_selector  = document.querySelector('#census-assistant-individual');
-    var xref           = indi_selector.options[indi_selector.selectedIndex].value;
-
-    let formData = new FormData();
-    formData.append('census', census);
-    formData.append('_csrf', document.querySelector('meta[name=csrf]').content);
-    formData.append('head', xref);
-    formData.append('xref', xref);
-
-    fetch(<?= json_encode(route('module', ['module' => 'GEDFact_assistant', 'action' => 'CensusIndividual', 'tree' => $individual->tree()->name()])) ?> , {
-        credentials: 'same-origin',
-        body: formData,
-        method: 'POST',
-    })
-    .then(response => response.text())
-    .then(function (text) {
-        document.querySelector('#census-assistant-table tbody').innerHTML = text;
+        document.querySelector('#census-assistant-table tbody').insertAdjacentHTML('beforeend', text);
     });
 
     return false;
@@ -194,7 +163,6 @@ use Fisharebest\Webtrees\View;
   $('#census-selector').on('change', censusAssistantSelect);
   $('#census-assistant-link').on('click', censusAssistantLink);
   $('#census-assistant-add').on('click', censusAssistantAdd);
-  $('#census-assistant-head').on('click', censusAssistantHead);
 
   $('#census-assistant-table').on('click', '.wt-icon-delete', function() {
     $(this).closest('tr').remove();

@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2021 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,13 +19,18 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Module;
 
+use Aura\Router\Route;
 use Fisharebest\Webtrees\Auth;
+use Fisharebest\Webtrees\Contracts\UserInterface;
 use Fisharebest\Webtrees\Fact;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Gedcom;
 use Fisharebest\Webtrees\Http\RequestHandlers\AccountEdit;
 use Fisharebest\Webtrees\Http\RequestHandlers\ControlPanel;
+use Fisharebest\Webtrees\Http\RequestHandlers\HomePage;
 use Fisharebest\Webtrees\Http\RequestHandlers\LoginPage;
 use Fisharebest\Webtrees\Http\RequestHandlers\Logout;
+use Fisharebest\Webtrees\Http\RequestHandlers\ManageTrees;
 use Fisharebest\Webtrees\Http\RequestHandlers\PendingChanges;
 use Fisharebest\Webtrees\Http\RequestHandlers\SelectLanguage;
 use Fisharebest\Webtrees\Http\RequestHandlers\SelectTheme;
@@ -38,27 +43,18 @@ use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Menu;
 use Fisharebest\Webtrees\Services\ModuleService;
 use Fisharebest\Webtrees\Tree;
-use Fisharebest\Webtrees\User;
 use Psr\Http\Message\ServerRequestInterface;
 
 use function app;
+use function assert;
 use function route;
+use function view;
 
 /**
  * Trait ModuleThemeTrait - default implementation of ModuleThemeInterface
  */
 trait ModuleThemeTrait
 {
-    /**
-     * @return string
-     */
-    abstract public function name(): string;
-
-    /**
-     * @return string
-     */
-    abstract public function title(): string;
-
     /**
      * A sentence describing what this module does.
      *
@@ -202,12 +198,13 @@ trait ModuleThemeTrait
         $request = app(ServerRequestInterface::class);
 
         $route = $request->getAttribute('route');
+        assert($route instanceof Route);
 
-        if (Auth::check() && $route === UserPage::class) {
+        if (Auth::check() && $route->name === UserPage::class) {
             return new Menu(I18N::translate('Customize this page'), route(UserPageEdit::class, ['tree' => $tree->name()]), 'menu-change-blocks');
         }
 
-        if (Auth::isManager($tree) && $route === TreePage::class) {
+        if (Auth::isManager($tree) && $route->name === TreePage::class) {
             return new Menu(I18N::translate('Customize this page'), route(TreePageEdit::class, ['tree' => $tree->name()]), 'menu-change-blocks');
         }
 
@@ -228,7 +225,7 @@ trait ModuleThemeTrait
         }
 
         if (Auth::isManager($tree)) {
-            return new Menu(I18N::translate('Control panel'), route('manage-trees', ['tree' => $tree->name()]), 'menu-admin');
+            return new Menu(I18N::translate('Control panel'), route(ManageTrees::class, ['tree' => $tree->name()]), 'menu-admin');
         }
 
         return null;
@@ -274,10 +271,12 @@ trait ModuleThemeTrait
         // Return to this page after login...
         $redirect = $request->getQueryParams()['url'] ?? (string) $request->getUri();
 
-        $tree = $request->getAttribute('tree');
+        $tree  = $request->getAttribute('tree');
+        $route = $request->getAttribute('route');
+        assert($route instanceof Route);
 
         // ...but switch from the tree-page to the user-page
-        if ($request->getAttribute('route') === TreePage::class) {
+        if ($route->name === TreePage::class) {
             $redirect = route(UserPage::class, ['tree' => $tree instanceof Tree ? $tree->name() : null]);
         }
 
@@ -296,7 +295,8 @@ trait ModuleThemeTrait
     {
         if (Auth::check()) {
             $parameters = [
-                'data-post-url' => route(Logout::class),
+                'data-post-url'   => route(Logout::class),
+                'data-reload-url' => route(HomePage::class)
             ];
 
             return new Menu(I18N::translate('Sign out'), '#', 'menu-logout', $parameters);
@@ -316,7 +316,7 @@ trait ModuleThemeTrait
     {
         $url = route(AccountEdit::class, ['tree' => $tree instanceof Tree ? $tree->name() : null]);
 
-        return new Menu(I18N::translate('My account'), $url);
+        return new Menu(I18N::translate('My account'), $url, 'menu-myaccount');
     }
 
     /**
@@ -328,7 +328,7 @@ trait ModuleThemeTrait
      */
     public function menuMyIndividualRecord(Tree $tree): ?Menu
     {
-        $record = Individual::getInstance($tree->getUserPreference(Auth::user(), User::PREF_TREE_ACCOUNT_XREF), $tree);
+        $record = Registry::individualFactory()->make($tree->getUserPreference(Auth::user(), UserInterface::PREF_TREE_ACCOUNT_XREF), $tree);
 
         if ($record) {
             return new Menu(I18N::translate('My individual record'), $record->url(), 'menu-myrecord');
@@ -358,7 +358,7 @@ trait ModuleThemeTrait
      */
     public function menuMyPages(?Tree $tree): ?Menu
     {
-        if (Auth::id()) {
+        if (Auth::check()) {
             if ($tree instanceof Tree) {
                 return new Menu(I18N::translate('My pages'), '#', 'menu-mymenu', [], array_filter([
                     $this->menuMyPage($tree),
@@ -385,7 +385,7 @@ trait ModuleThemeTrait
      */
     public function menuMyPedigree(Tree $tree): ?Menu
     {
-        $gedcomid = $tree->getUserPreference(Auth::user(), User::PREF_TREE_ACCOUNT_XREF);
+        $gedcomid = $tree->getUserPreference(Auth::user(), UserInterface::PREF_TREE_ACCOUNT_XREF);
 
         $pedigree_chart = app(ModuleService::class)->findByComponent(ModuleChartInterface::class, $tree, Auth::user())
             ->filter(static function (ModuleInterface $module): bool {
@@ -455,7 +455,7 @@ trait ModuleThemeTrait
     }
 
     /**
-     * Misecellaneous dimensions, fonts, styles, etc.
+     * Miscellaneous dimensions, fonts, styles, etc.
      *
      * @param string $parameter_name
      *
@@ -497,7 +497,7 @@ trait ModuleThemeTrait
     public function genealogyMenuContent(array $menus): string
     {
         return implode('', array_map(static function (Menu $menu): string {
-            return $menu->bootstrap4();
+            return view('components/menu-item', ['menu' => $menu]);
         }, $menus));
     }
 

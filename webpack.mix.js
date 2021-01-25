@@ -8,7 +8,7 @@ const postcss_import = require("postcss-import")();
 const postcss_autoprefixer = require("autoprefixer")();
 
 // https://github.com/jakob101/postcss-inline-rtl
-const postcss_rtl = require("postcss-rtl")();
+const postcss_rtl = require("@mjhenkes/postcss-rtl")();
 
 // https://github.com/bezoerb/postcss-image-inliner
 const postcss_image_inliner = require("postcss-image-inliner")({
@@ -20,29 +20,16 @@ const postcss_image_inliner = require("postcss-image-inliner")({
 // Enable CSS variables in IE
 const postcss_custom_properties = require("postcss-custom-properties")();
 
-mix.styles([
-    "node_modules/bootstrap/dist/css/bootstrap.min.css",
-    "node_modules/datatables.net-bs4/css/dataTables.bootstrap4.css",
-    "resources/css/begin-ignore-rtl.css",
-    "node_modules/select2/dist/css/select2.min.css",
-    "resources/css/end-ignore-rtl.css",
-    "node_modules/typeahead.js-bootstrap4-css/typeaheadjs.css",
-    "node_modules/leaflet/dist/leaflet.css",
-    "node_modules/beautifymarker/leaflet-beautify-marker-icon.css",
-    "node_modules/leaflet-geosearch/dist/style.css",
-    "node_modules/leaflet.markercluster/dist/MarkerCluster.Default.css",
-    "node_modules/leaflet.markercluster/dist/MarkerCluster.css",
-], "public/css/vendor.css");
-
 mix
     .autoload({
         jquery: ["$", "jQuery"],
     })
     .setPublicPath('./public')
-    .sourceMaps()
+    .sourceMaps(false)
     .js("resources/js/vendor.js", "public/js/vendor.min.js")
     .babel(["resources/js/webtrees.js", "resources/js/statistics.js", "resources/js/treeview.js"], "public/js/webtrees.min.js")
     .copy("node_modules/leaflet/dist/images/*", "public/css/images/")
+    .copy("node_modules/leaflet-control-geocoder/dist/images/*", "public/css/images/")
     .copy("node_modules/dejavu-fonts-ttf/ttf/DejaVuSans.ttf", "resources/fonts/")
     .options({
             processCssUrls: false,
@@ -77,4 +64,4 @@ mix
     .postCss("resources/css/minimal.css", "public/css/minimal.min.css")
     .postCss("resources/css/webtrees.css", "public/css/webtrees.min.css")
     .postCss("resources/css/xenea.css", "public/css/xenea.min.css")
-    .postCss("public/css/vendor.css", "public/css/vendor.min.css");
+    .postCss("resources/css/vendor.css", "public/css/vendor.min.css");

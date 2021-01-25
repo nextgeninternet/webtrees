@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2021 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -28,6 +28,10 @@ use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
 use stdClass;
 
+use function trim;
+
+use const PREG_SPLIT_NO_EMPTY;
+
 /**
  * A GEDCOM place (PLAC) object.
  */
@@ -51,8 +55,8 @@ class Place
     public function __construct(string $place_name, Tree $tree)
     {
         // Ignore any empty parts in place names such as "Village, , , Country".
-        $this->parts = Collection::make(preg_split(Gedcom::PLACE_SEPARATOR_REGEX, $place_name))
-            ->filter();
+        $place_name  = trim($place_name);
+        $this->parts = new Collection(preg_split(Gedcom::PLACE_SEPARATOR_REGEX, $place_name, -1, PREG_SPLIT_NO_EMPTY));
 
         // Rebuild the placename in the correct format.
         $this->place_name = $this->parts->implode(Gedcom::PLACE_SEPARATOR);
@@ -109,7 +113,7 @@ class Place
      */
     public function id(): int
     {
-        return app('cache.array')->remember('place-' . $this->place_name, function (): int {
+        return Registry::cache()->array()->remember('place-' . $this->place_name, function (): int {
             // The "top-level" place won't exist in the database.
             if ($this->parts->isEmpty()) {
                 return 0;
@@ -119,7 +123,7 @@ class Place
 
             $place_id = (int) DB::table('places')
                 ->where('p_file', '=', $this->tree->id())
-                ->where('p_place', '=', $this->parts->first())
+                ->where('p_place', '=', mb_substr($this->parts->first(), 0, 120))
                 ->where('p_parent_id', '=', $parent_place_id)
                 ->value('p_id');
 
@@ -128,7 +132,7 @@ class Place
 
                 DB::table('places')->insert([
                     'p_file'        => $this->tree->id(),
-                    'p_place'       => $place,
+                    'p_place'       => mb_substr($place, 0, 120),
                     'p_parent_id'   => $parent_place_id,
                     'p_std_soundex' => Soundex::russell($place),
                     'p_dm_soundex'  => Soundex::daitchMokotoff($place),
@@ -139,6 +143,14 @@ class Place
 
             return $place_id;
         });
+    }
+
+    /**
+     * @return Tree
+     */
+    public function tree(): Tree
+    {
+        return $this->tree;
     }
 
     /**
@@ -168,7 +180,7 @@ class Place
     /**
      * Get the lower level places.
      *
-     * @return Place[]
+     * @return array<Place>
      */
     public function getChildPlaces(): array
     {
@@ -202,7 +214,7 @@ class Place
             ->first(static function (ModuleInterface $module): bool {
                 return $module instanceof PlaceHierarchyListModule;
             });
-        
+
         if ($module instanceof PlaceHierarchyListModule) {
             return $module->listUrl($this->tree, [
                 'place_id' => $this->id(),

@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2021 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -21,8 +21,8 @@ namespace Fisharebest\Webtrees\Http\Middleware;
 
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Carbon;
+use Fisharebest\Webtrees\Contracts\UserInterface;
 use Fisharebest\Webtrees\Session;
-use Fisharebest\Webtrees\User;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -58,14 +58,12 @@ class UseSession implements MiddlewareInterface
         $user = Auth::user();
 
         // Update the last-login time no more than once a minute.
-        $next_session_update = Carbon::createFromTimestamp((int) Session::get('session_time_updates'))->addMinute();
-        if ($next_session_update < Carbon::now()) {
-            $timestamp_now = Carbon::now()->unix();
+        if (Session::get('masquerade') === null) {
+            $last = Carbon::createFromTimestamp((int) $user->getPreference(UserInterface::PREF_TIMESTAMP_ACTIVE));
 
-            if (Session::get('masquerade') === null) {
-                $user->setPreference(User::PREF_TIMESTAMP_ACTIVE, (string) $timestamp_now);
+            if (Carbon::now()->subMinute()->gt($last)) {
+                $user->setPreference(UserInterface::PREF_TIMESTAMP_ACTIVE, (string) Carbon::now()->unix());
             }
-            Session::put('session_time_updates', $timestamp_now);
         }
 
         $request = $request->withAttribute('user', $user);

@@ -6,6 +6,7 @@ use Fisharebest\Webtrees\Functions\FunctionsPrintFacts;
 use Fisharebest\Webtrees\Http\RequestHandlers\PendingChangesAcceptRecord;
 use Fisharebest\Webtrees\Http\RequestHandlers\PendingChangesRejectRecord;
 use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Repository;
 
 ?>
 
@@ -34,12 +35,13 @@ use Fisharebest\Webtrees\I18N;
 
 <div class="wt-page-content">
     <ul class="nav nav-tabs" role="tablist">
-        <li class="nav-item">
+        <li class="nav-item" role="presentation">
             <a class="nav-link active" data-toggle="tab" role="tab" href="#details">
                 <?= I18N::translate('Details') ?>
             </a>
         </li>
-        <li class="nav-item">
+
+        <li class="nav-item" role="presentation">
             <a class="nav-link<?= $sources->isEmpty() ? ' text-muted' : '' ?>" data-toggle="tab" role="tab" href="#sources">
                 <?= I18N::translate('Sources') ?>
                 <?= view('components/badge', ['count' => count($sources)]) ?>
@@ -57,7 +59,7 @@ use Fisharebest\Webtrees\I18N;
                 <?php if ($repository->canEdit()) : ?>
                     <?= view('edit/paste-fact-row', ['record' => $repository, 'facts' => $clipboard_facts]) ?>
 
-                    <?php FunctionsPrint::printAddNewFact($repository, $facts, 'REPO') ?>
+                    <?php FunctionsPrint::printAddNewFact($repository, $facts, Repository::RECORD_TYPE) ?>
                 <?php endif ?>
             </table>
         </div>

@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,34 +20,24 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Module;
 
 use Fig\Http\Message\StatusCodeInterface;
-use Fisharebest\Webtrees\Carbon;
 use Fisharebest\Webtrees\Exceptions\HttpAccessDeniedException;
 use Fisharebest\Webtrees\Exceptions\HttpNotFoundException;
-use Illuminate\Support\Str;
+use Fisharebest\Webtrees\Mime;
+use Fisharebest\Webtrees\Registry;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
+use function str_contains;
 use function strlen;
+use function strtolower;
 
 /**
  * Trait ModuleCustomTrait - default implementation of ModuleCustomInterface
  */
 trait ModuleCustomTrait
 {
-    /**
-     * Where does this module store its resources
-     *
-     * @return string
-     */
-    abstract public function resourcesFolder(): string;
-
-    /**
-     * A unique internal name for this module (based on the installation folder).
-     *
-     * @return string
-     */
-    abstract public function name(): string;
-
     /**
      * The person or organisation who created this module.
      *
@@ -79,7 +69,43 @@ trait ModuleCustomTrait
     }
 
     /**
-     * Where to get support for this module.  Perhaps a github respository?
+     * Fetch the latest version of this module.
+     *
+     * @return string
+     */
+    public function customModuleLatestVersion(): string
+    {
+        // No update URL provided.
+        if ($this->customModuleLatestVersionUrl() === '') {
+            return $this->customModuleVersion();
+        }
+
+        return Registry::cache()->file()->remember($this->name() . '-latest-version', function () {
+            try {
+                $client = new Client([
+                    'timeout' => 3,
+                ]);
+
+                $response = $client->get($this->customModuleLatestVersionUrl());
+
+                if ($response->getStatusCode() === StatusCodeInterface::STATUS_OK) {
+                    $version = $response->getBody()->getContents();
+
+                    // Does the response look like a version?
+                    if (preg_match('/^\d+\.\d+\.\d+/', $version)) {
+                        return $version;
+                    }
+                }
+            } catch (RequestException $ex) {
+                // Can't connect to the server?
+            }
+
+            return $this->customModuleVersion();
+        }, 86400);
+    }
+
+    /**
+     * Where to get support for this module.  Perhaps a github repository?
      *
      * @return string
      */
@@ -93,7 +119,7 @@ trait ModuleCustomTrait
      *
      * @param string $language
      *
-     * @return string[]
+     * @return array<string,string>
      */
     public function customTranslations(string $language): array
     {
@@ -135,42 +161,27 @@ trait ModuleCustomTrait
         $asset = $request->getQueryParams()['asset'];
 
         // Do not allow requests that try to access parent folders.
-        if (Str::contains($asset, '..')) {
+        if (str_contains($asset, '..')) {
             throw new HttpAccessDeniedException($asset);
         }
 
         // Find the file for this asset.
         // Note that we could also generate CSS files using views/templates.
-        // e.g. $file = view(....
+        // e.g. $file = view(....)
         $file = $this->resourcesFolder() . $asset;
 
         if (!file_exists($file)) {
-            throw new HttpNotFoundException($file);
+            throw new HttpNotFoundException(e($file));
         }
 
         $content   = file_get_contents($file);
-        $extension = pathinfo($asset, PATHINFO_EXTENSION);
+        $extension = strtolower(pathinfo($asset, PATHINFO_EXTENSION));
+        $mime_type = Mime::TYPES[$extension] ?? Mime::DEFAULT_TYPE;
 
-        $mime_types = [
-            'css'  => 'text/css',
-            'gif'  => 'image/gif',
-            'js'   => 'application/javascript',
-            'jpg'  => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'json' => 'application/json',
-            'png'  => 'image/png',
-            'txt'  => 'text/plain',
-        ];
-
-        $mime_type = $mime_types[$extension] ?? 'application/octet-stream';
-
-        $headers = [
+        return response($content, StatusCodeInterface::STATUS_OK, [
+            'Cache-Control'  => 'public,max-age=31536000',
+            'Content-Length' => (string) strlen($content),
             'Content-Type'   => $mime_type,
-            'Cache-Control'  => 'max-age=31536000, public',
-            'Content-Length' => strlen($content),
-            'Expires'        => Carbon::now()->addYears(10)->toRfc7231String(),
-        ];
-
-        return response($content, StatusCodeInterface::STATUS_OK, $headers);
+        ]);
     }
 }

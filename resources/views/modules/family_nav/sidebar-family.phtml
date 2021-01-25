@@ -1,9 +1,17 @@
 <?php
 
+use Fisharebest\Webtrees\Family;
 use Fisharebest\Webtrees\Functions\Functions;
+use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Individual;
+
+/**
+ * @var Individual $individual
+ * @var Family     $family
+ * @var string     $title
+ */
 
 ?>
-<?php use Fisharebest\Webtrees\I18N; ?>
 
 <table class="table table-sm wt-facts-table wt-family-navigator-family">
     <caption class="text-center wt-family-navigator-family-heading">
@@ -18,20 +26,25 @@ use Fisharebest\Webtrees\Functions\Functions;
                     <?php if ($spouse === $individual) : ?>
                         <?= Functions::getCloseRelationshipName($individual, $spouse) ?>
                         <i class="icon-selected"></i>
-                    <?php elseif ($spouse->childFamilies()->first() !== null) : ?>
+                    <?php elseif ($spouse->childFamilies()->isNotEmpty()) : ?>
                     <div class="dropdown">
                         <a class="dropdown-toggle" href="#" role="button" id="dropdown-<?= e($spouse->xref()) ?>" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             <?= Functions::getCloseRelationshipName($individual, $spouse) ?>
                         </a>
 
                         <div class="dropdown-menu wt-family-navigator-dropdown">
-                            <div class="dropdown-header wt-family-navigator-dropdown-heading">
-                                <?= I18N::translate('Parents') ?>
-                            </div>
-                            <?php foreach ($spouse->childFamilies()->first()->spouses() as $parent) : ?>
-                                <a class="dropdown-item" href="<?= e($parent->url()) ?>">
-                                    <?= $parent->fullName() ?>
+                            <?php foreach ($spouse->childFamilies() as $n => $spouse_child_family) : ?>
+                                <?php if ($n > 0) : ?>
+                                    <div class="dropdown-divider"></div>
+                                <?php endif ?>
+                                <a class="dropdown-header wt-family-navigator-dropdown-heading" href="<?= e($spouse_child_family->url()) ?>">
+                                    <?= I18N::translate('Parents') ?>
                                 </a>
+                                <?php foreach ($spouse_child_family->spouses() as $parent) : ?>
+                                    <a class="dropdown-item" href="<?= e($parent->url()) ?>">
+                                        <?= $parent->fullName() ?>
+                                    </a>
+                                <?php endforeach ?>
                             <?php endforeach ?>
                         </div>
                     </div>
@@ -57,7 +70,7 @@ use Fisharebest\Webtrees\Functions\Functions;
 
         <?php foreach ($family->children() as $child) : ?>
             <tr class="text-center wt-family-navigator-child wt-gender-<?= $child->sex() ?>">
-                <th class="text-nowrap align-middle" scope="row">
+                <th class="align-middle wt-family-navigator-label" scope="row">
                     <?php if ($child === $individual) : ?>
                         <?= Functions::getCloseRelationshipName($individual, $child) ?>
                         <i class="icon-selected"></i>
@@ -72,9 +85,9 @@ use Fisharebest\Webtrees\Functions\Functions;
                                     <?php if ($n > 0) : ?>
                                         <div class="dropdown-divider"></div>
                                     <?php endif ?>
-                                    <div class="dropdown-header wt-family-navigator-dropdown-heading">
+                                    <a class="dropdown-header wt-family-navigator-dropdown-heading" href="<?= e($in_laws->url()) ?>">
                                         <?= I18N::translate('Family') ?>
-                                    </div>
+                                    </a>
 
                                     <?php foreach ($in_laws->spouses() as $sibling_in_law) : ?>
                                         <?php if ($sibling_in_law !== $child) : ?>

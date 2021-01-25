@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2021 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -23,6 +23,7 @@ use Closure;
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Carbon;
 use Fisharebest\Webtrees\Contracts\UserInterface;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Http\RequestHandlers\ContactPage;
 use Fisharebest\Webtrees\Http\RequestHandlers\MessagePage;
 use Fisharebest\Webtrees\Individual;
@@ -34,7 +35,6 @@ use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Collection;
 use Psr\Http\Message\ServerRequestInterface;
 
-use function app;
 use function assert;
 use function max;
 
@@ -52,7 +52,7 @@ class UserService
      */
     public function find($user_id): ?User
     {
-        return app('cache.array')->remember('user-' . $user_id, static function () use ($user_id): ?User {
+        return Registry::cache()->array()->remember('user-' . $user_id, static function () use ($user_id): ?User {
             return DB::table('user')
                 ->where('user_id', '=', $user_id)
                 ->get()
@@ -107,7 +107,7 @@ class UserService
             ->join('user_gedcom_setting', 'user_gedcom_setting.user_id', '=', 'user.user_id')
             ->where('gedcom_id', '=', $individual->tree()->id())
             ->where('setting_value', '=', $individual->xref())
-            ->where('setting_name', '=', User::PREF_TREE_ACCOUNT_XREF)
+            ->where('setting_name', '=', UserInterface::PREF_TREE_ACCOUNT_XREF)
             ->select(['user.*'])
             ->get()
             ->map(User::rowMapper());
@@ -128,7 +128,7 @@ class UserService
             ->where('us1.setting_value', '=', $token)
             ->join('user_setting AS us2', 'us2.user_id', '=', 'user.user_id')
             ->where('us2.setting_name', '=', 'password-token-expire')
-            ->where('us2.setting_value', '>', Carbon::now()->timestamp)
+            ->where('us2.setting_value', '>', Carbon::now()->getTimestamp())
             ->select(['user.*'])
             ->get()
             ->map(User::rowMapper())
@@ -159,10 +159,10 @@ class UserService
     public function sortByLastLogin(): Closure
     {
         return static function (UserInterface $user1, UserInterface $user2) {
-            $registered_at1 = (int) $user1->getPreference(User::PREF_TIMESTAMP_REGISTERED);
-            $logged_in_at1  = (int) $user1->getPreference(User::PREF_TIMESTAMP_ACTIVE);
-            $registered_at2 = (int) $user2->getPreference(User::PREF_TIMESTAMP_REGISTERED);
-            $logged_in_at2  = (int) $user2->getPreference(User::PREF_TIMESTAMP_ACTIVE);
+            $registered_at1 = (int) $user1->getPreference(UserInterface::PREF_TIMESTAMP_REGISTERED);
+            $logged_in_at1  = (int) $user1->getPreference(UserInterface::PREF_TIMESTAMP_ACTIVE);
+            $registered_at2 = (int) $user2->getPreference(UserInterface::PREF_TIMESTAMP_REGISTERED);
+            $logged_in_at2  = (int) $user2->getPreference(UserInterface::PREF_TIMESTAMP_ACTIVE);
 
             return max($registered_at1, $logged_in_at1) <=> max($registered_at2, $logged_in_at2);
         };
@@ -178,8 +178,8 @@ class UserService
     public function filterInactive(int $timestamp): Closure
     {
         return static function (UserInterface $user) use ($timestamp): bool {
-            $registered_at = (int) $user->getPreference(User::PREF_TIMESTAMP_REGISTERED);
-            $logged_in_at  = (int) $user->getPreference(User::PREF_TIMESTAMP_ACTIVE);
+            $registered_at = (int) $user->getPreference(UserInterface::PREF_TIMESTAMP_REGISTERED);
+            $logged_in_at  = (int) $user->getPreference(UserInterface::PREF_TIMESTAMP_ACTIVE);
 
             return max($registered_at, $logged_in_at) < $timestamp;
         };
@@ -208,7 +208,7 @@ class UserService
     {
         return DB::table('user')
             ->join('user_setting', 'user_setting.user_id', '=', 'user.user_id')
-            ->where('user_setting.setting_name', '=', User::PREF_IS_ADMINISTRATOR)
+            ->where('user_setting.setting_name', '=', UserInterface::PREF_IS_ADMINISTRATOR)
             ->where('user_setting.setting_value', '=', '1')
             ->where('user.user_id', '>', 0)
             ->orderBy('real_name')
@@ -226,8 +226,8 @@ class UserService
     {
         return DB::table('user')
             ->join('user_gedcom_setting', 'user_gedcom_setting.user_id', '=', 'user.user_id')
-            ->where('user_gedcom_setting.setting_name', '=', User::PREF_TREE_ROLE)
-            ->where('user_gedcom_setting.setting_value', '=', User::ROLE_MANAGER)
+            ->where('user_gedcom_setting.setting_name', '=', UserInterface::PREF_TREE_ROLE)
+            ->where('user_gedcom_setting.setting_value', '=', UserInterface::ROLE_MANAGER)
             ->where('user.user_id', '>', 0)
             ->groupBy(['user.user_id'])
             ->orderBy('real_name')
@@ -245,8 +245,8 @@ class UserService
     {
         return DB::table('user')
             ->join('user_gedcom_setting', 'user_gedcom_setting.user_id', '=', 'user.user_id')
-            ->where('user_gedcom_setting.setting_name', '=', User::PREF_TREE_ROLE)
-            ->where('user_gedcom_setting.setting_value', '=', User::ROLE_MODERATOR)
+            ->where('user_gedcom_setting.setting_name', '=', UserInterface::PREF_TREE_ROLE)
+            ->where('user_gedcom_setting.setting_value', '=', UserInterface::ROLE_MODERATOR)
             ->where('user.user_id', '>', 0)
             ->groupBy(['user.user_id'])
             ->orderBy('real_name')
@@ -266,7 +266,7 @@ class UserService
             ->leftJoin('user_setting', static function (JoinClause $join): void {
                 $join
                     ->on('user_setting.user_id', '=', 'user.user_id')
-                    ->where('user_setting.setting_name', '=', User::PREF_IS_ACCOUNT_APPROVED);
+                    ->where('user_setting.setting_name', '=', UserInterface::PREF_IS_ACCOUNT_APPROVED);
             })
             ->where(static function (Builder $query): void {
                 $query
@@ -291,7 +291,7 @@ class UserService
             ->leftJoin('user_setting', static function (JoinClause $join): void {
                 $join
                     ->on('user_setting.user_id', '=', 'user.user_id')
-                    ->where('user_setting.setting_name', '=', User::PREF_IS_EMAIL_VERIFIED);
+                    ->where('user_setting.setting_name', '=', UserInterface::PREF_IS_EMAIL_VERIFIED);
             })
             ->where(static function (Builder $query): void {
                 $query
@@ -398,7 +398,7 @@ class UserService
 
         $user = $request->getAttribute('user');
 
-        if ($contact_user->getPreference(User::PREF_CONTACT_METHOD) === 'mailto') {
+        if ($contact_user->getPreference(UserInterface::PREF_CONTACT_METHOD) === 'mailto') {
             $url = 'mailto:' . $contact_user->email();
         } elseif ($user instanceof User) {
             // Logged-in users send direct messages

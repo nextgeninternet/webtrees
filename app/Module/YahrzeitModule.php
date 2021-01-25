@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -27,8 +27,14 @@ use Fisharebest\Webtrees\Date\JewishDate;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Services\CalendarService;
 use Fisharebest\Webtrees\Tree;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Psr\Http\Message\ServerRequestInterface;
+
+use function extract;
+use function view;
+
+use const EXTR_OVERWRITE;
 
 /**
  * Class YahrzeitModule
@@ -44,6 +50,10 @@ class YahrzeitModule extends AbstractModule implements ModuleBlockInterface
 
     // Can show this number of days into the future.
     private const MAX_DAYS = 30;
+
+    // Pagination
+    private const LIMIT_LOW  = 10;
+    private const LIMIT_HIGH = 20;
 
     /**
      * How should this module be identified in the control panel, etc.?
@@ -94,14 +104,15 @@ class YahrzeitModule extends AbstractModule implements ModuleBlockInterface
         // The standard anniversary rules cover most of the Yahrzeit rules, we just
         // need to handle a few special cases.
         // Fetch normal anniversaries, with an extra day before/after
-        $yahrzeits = [];
+        $yahrzeits = new Collection();
         for ($jd = $startjd - 1; $jd <= $endjd + $days; ++$jd) {
             foreach ($calendar_service->getAnniversaryEvents($jd, 'DEAT _YART', $tree) as $fact) {
                 // Exact hebrew dates only
                 $date = $fact->date();
                 if ($date->minimumDate() instanceof JewishDate && $date->minimumJulianDay() === $date->maximumJulianDay()) {
+                    $jd_yahrtzeit = $jd;
                     // ...then adjust DEAT dates (but not _YART)
-                    if ($fact->getTag() === 'DEAT') {
+                    if ($fact->tag() === 'INDI:DEAT') {
                         $today     = new JewishDate($jd);
                         $hd        = $fact->date()->minimumDate();
                         $hd1       = new JewishDate($hd);
@@ -109,39 +120,38 @@ class YahrzeitModule extends AbstractModule implements ModuleBlockInterface
                         $hd1->setJdFromYmd();
                         // Special rules. See http://www.hebcal.com/help/anniv.html
                         // Everything else is taken care of by our standard anniversary rules.
-                        if ($hd->day == 30 && $hd->month == 2 && $hd->year != 0 && $hd1->daysInMonth() < 30) {
+                        if ($hd->day === 30 && $hd->month === 2 && $hd->year !== 0 && $hd1->daysInMonth() < 30) {
                             // 30 CSH - Last day in CSH
-                            $jd = $jewish_calendar->ymdToJd($today->year, 3, 1) - 1;
-                        } elseif ($hd->day == 30 && $hd->month == 3 && $hd->year != 0 && $hd1->daysInMonth() < 30) {
+                            $jd_yahrtzeit = $jewish_calendar->ymdToJd($today->year, 3, 1) - 1;
+                        } elseif ($hd->day === 30 && $hd->month === 3 && $hd->year !== 0 && $hd1->daysInMonth() < 30) {
                             // 30 KSL - Last day in KSL
-                            $jd = $jewish_calendar->ymdToJd($today->year, 4, 1) - 1;
-                        } elseif ($hd->day == 30 && $hd->month == 6 && $hd->year != 0 && $today->daysInMonth() < 30 && !$today->isLeapYear()) {
+                            $jd_yahrtzeit = $jewish_calendar->ymdToJd($today->year, 4, 1) - 1;
+                        } elseif ($hd->day === 30 && $hd->month === 6 && $hd->year !== 0 && $today->daysInMonth() < 30 && !$today->isLeapYear()) {
                             // 30 ADR - Last day in SHV
-                            $jd = $jewish_calendar->ymdToJd($today->year, 6, 1) - 1;
+                            $jd_yahrtzeit = $jewish_calendar->ymdToJd($today->year, 6, 1) - 1;
                         }
                     }
 
                     // Filter adjusted dates to our date range
-                    if ($jd >= $startjd && $jd < $startjd + $days) {
-                        // upcomming yahrzeit dates
+                    if ($jd_yahrtzeit >= $startjd && $jd_yahrtzeit < $startjd + $days) {
+                        // upcoming yahrzeit dates
                         switch ($calendar) {
                             case 'gregorian':
-                                $yahrzeit_date = new GregorianDate($jd);
+                                $yahrzeit_calendar_date = new GregorianDate($jd_yahrtzeit);
                                 break;
                             case 'jewish':
                             default:
-                                $yahrzeit_date = new JewishDate($jd);
+                                $yahrzeit_calendar_date = new JewishDate($jd_yahrtzeit);
                                 break;
                         }
-                        $yahrzeit_date = new Date($yahrzeit_date->format('%@ %A %O %E'));
+                        $yahrzeit_date = new Date($yahrzeit_calendar_date->format('%@ %A %O %E'));
 
-                        $yahrzeits[] = (object) [
+                        $yahrzeits->add((object) [
                             'individual'    => $fact->record(),
                             'fact_date'     => $fact->date(),
                             'fact'          => $fact,
-                            'jd'            => $jd,
                             'yahrzeit_date' => $yahrzeit_date,
-                        ];
+                        ]);
                     }
                 }
             }
@@ -150,13 +160,18 @@ class YahrzeitModule extends AbstractModule implements ModuleBlockInterface
         switch ($infoStyle) {
             case 'list':
                 $content = view('modules/yahrzeit/list', [
-                    'yahrzeits' => $yahrzeits,
+                    'id'         => $block_id,
+                    'limit_low'  => self::LIMIT_LOW,
+                    'limit_high' => self::LIMIT_HIGH,
+                    'yahrzeits'  => $yahrzeits,
                 ]);
                 break;
             case 'table':
             default:
                 $content = view('modules/yahrzeit/table', [
-                    'yahrzeits' => $yahrzeits,
+                    'limit_low'  => self::LIMIT_LOW,
+                    'limit_high' => self::LIMIT_HIGH,
+                    'yahrzeits'  => $yahrzeits,
                 ]);
                 break;
         }

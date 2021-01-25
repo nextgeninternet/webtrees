@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -23,6 +23,7 @@ use Fisharebest\Algorithm\ConnectedComponent;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
 use Fisharebest\Webtrees\User;
 use Illuminate\Database\Capsule\Manager as DB;
@@ -49,15 +50,22 @@ class UnconnectedPage implements RequestHandlerInterface
         $tree = $request->getAttribute('tree');
         assert($tree instanceof Tree);
 
-        $user       = $request->getAttribute('user');
+        $user = $request->getAttribute('user');
         assert($user instanceof User);
 
+        $aliases    = (bool) ($request->getQueryParams()['aliases'] ?? false);
         $associates = (bool) ($request->getQueryParams()['associates'] ?? false);
 
+        // Connect individuals using these links.
+        $links = ['FAMS', 'FAMC'];
+
+        if ($aliases) {
+            $links[] = 'ALIA';
+        }
+
         if ($associates) {
-            $links = ['FAMS', 'FAMC', 'ASSO', '_ASSO'];
-        } else {
-            $links = ['FAMS', 'FAMC'];
+            $links[] = 'ASSO';
+            $links[] = '_ASSO';
         }
 
         $rows = DB::table('link')
@@ -89,12 +97,12 @@ class UnconnectedPage implements RequestHandlerInterface
 
         foreach ($components as $component) {
             if (!in_array($xref, $component, true)) {
-                $individuals = [];
-                foreach ($component as $xref) {
-                    $individuals[] = Individual::getInstance($xref, $tree);
-                }
-                // The database query may return pending additions/deletions, which may not exist.
-                $individual_groups[] = array_filter($individuals);
+                $individual_groups[] = DB::table('individuals')
+                    ->where('i_file', '=', $tree->id())
+                    ->whereIn('i_id', $component)
+                    ->get()
+                    ->map(Registry::individualFactory()->mapper($tree))
+                    ->filter();
             }
         }
 
@@ -103,6 +111,7 @@ class UnconnectedPage implements RequestHandlerInterface
         $this->layout = 'layouts/administration';
 
         return $this->viewResponse('admin/trees-unconnected', [
+            'aliases'           => $aliases,
             'associates'        => $associates,
             'root'              => $root,
             'individual_groups' => $individual_groups,

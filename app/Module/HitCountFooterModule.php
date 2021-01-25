@@ -19,12 +19,14 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Module;
 
+use Aura\Router\Route;
 use Fisharebest\Webtrees\Http\RequestHandlers\FamilyPage;
 use Fisharebest\Webtrees\Http\RequestHandlers\IndividualPage;
 use Fisharebest\Webtrees\Http\RequestHandlers\MediaPage;
 use Fisharebest\Webtrees\Http\RequestHandlers\NotePage;
 use Fisharebest\Webtrees\Http\RequestHandlers\RepositoryPage;
 use Fisharebest\Webtrees\Http\RequestHandlers\SourcePage;
+use Fisharebest\Webtrees\Http\RequestHandlers\SubmitterPage;
 use Fisharebest\Webtrees\Http\RequestHandlers\TreePage;
 use Fisharebest\Webtrees\Http\RequestHandlers\UserPage;
 use Fisharebest\Webtrees\I18N;
@@ -35,6 +37,8 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+
+use function assert;
 
 /**
  * Class HitCountFooterModule - show the number of page hits in the footer.
@@ -52,6 +56,7 @@ class HitCountFooterModule extends AbstractModule implements ModuleFooterInterfa
         NotePage::class       => 'note.php',
         RepositoryPage::class => 'repo.php',
         SourcePage::class     => 'source.php',
+        SubmitterPage::class  => 'submitter',
         TreePage::class       => 'index.php',
         UserPage::class       => 'index.php',
     ];
@@ -120,20 +125,23 @@ class HitCountFooterModule extends AbstractModule implements ModuleFooterInterfa
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $route = $request->getAttribute('route');
+        assert($route instanceof Route);
+
         $tree  = $request->getAttribute('tree');
         $user  = $request->getAttribute('user');
 
         if ($tree instanceof Tree && $tree->getPreference('SHOW_COUNTER')) {
-            $page_name = self::PAGE_NAMES[$route] ?? '';
+            $page_name = self::PAGE_NAMES[$route->name] ?? '';
 
-            switch ($route) {
+            switch ($route->name) {
                 case FamilyPage::class:
                 case IndividualPage::class:
                 case MediaPage::class:
                 case NotePage::class:
                 case RepositoryPage::class:
                 case SourcePage::class:
-                    $this->page_hits = $this->countHit($tree, $page_name, $request->getQueryParams()['xref'] ?? '');
+                case SubmitterPage::class:
+                    $this->page_hits = $this->countHit($tree, $page_name, $request->getAttribute('xref', ''));
                     break;
 
                 case TreePage::class:

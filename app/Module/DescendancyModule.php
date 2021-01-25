@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Module;
 
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Family;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
@@ -124,7 +125,7 @@ class DescendancyModule extends AbstractModule implements ModuleSidebarInterface
 
         $xref = $request->getQueryParams()['xref'] ?? '';
 
-        $individual = Individual::getInstance($xref, $tree);
+        $individual = Registry::individualFactory()->make($xref, $tree);
 
         if ($individual !== null && $individual->canShow()) {
             $html = $this->loadSpouses($individual, 1);
@@ -135,7 +136,11 @@ class DescendancyModule extends AbstractModule implements ModuleSidebarInterface
         return response($html);
     }
 
-    /** {@inheritdoc} */
+    /**
+     * @param Individual $individual
+     *
+     * @return bool
+     */
     public function hasSidebarContent(Individual $individual): bool
     {
         return true;

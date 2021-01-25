@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -37,25 +37,22 @@ class CensusColumnChildrenLiving extends AbstractCensusColumn implements CensusC
      */
     public function generate(Individual $individual, Individual $head): string
     {
-        if ($individual->sex() !== 'F') {
+        $family = $this->spouseFamily($individual);
+
+        if ($family === null || $individual->sex() !== 'F') {
             return '';
         }
 
-        $count = 0;
-        foreach ($individual->spouseFamilies() as $family) {
-            foreach ($family->children() as $child) {
+        return (string) $family->children()
+            ->filter(function (Individual $child): bool {
                 $birth = $child->getBirthDate();
                 $death = $child->getDeathDate();
 
                 $born_before = $birth->isOK() && Date::compare($birth, $this->date()) < 0;
                 $died_after  = $death->isOK() && Date::compare($death, $this->date()) > 0 || !$death->isOK();
 
-                if ($born_before && $died_after) {
-                    $count++;
-                }
-            }
-        }
-
-        return (string) $count;
+                return $born_before && $died_after;
+            })
+            ->count();
     }
 }

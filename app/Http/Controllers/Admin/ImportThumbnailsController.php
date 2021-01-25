@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,22 +19,22 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Http\Controllers\Admin;
 
-use Fisharebest\Webtrees\Cache;
+use Fisharebest\Webtrees\Http\RequestHandlers\AdminMediaFileThumbnail;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Media;
+use Fisharebest\Webtrees\Mime;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Services\PendingChangesService;
 use Fisharebest\Webtrees\Services\SearchService;
 use Fisharebest\Webtrees\Services\TreeService;
 use Illuminate\Support\Collection;
 use Intervention\Image\ImageManager;
-use League\Flysystem\Filesystem;
+use League\Flysystem\FilesystemInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 use function abs;
-use function app;
 use function array_map;
-use function assert;
 use function dirname;
 use function e;
 use function explode;
@@ -45,10 +45,10 @@ use function is_file;
 use function max;
 use function response;
 use function route;
+use function str_contains;
 use function str_replace;
 use function stripos;
 use function strlen;
-use function strpos;
 use function substr;
 use function substr_compare;
 use function view;
@@ -111,8 +111,7 @@ class ImportThumbnailsController extends AbstractAdminController
      */
     public function webtrees1ThumbnailsAction(ServerRequestInterface $request): ResponseInterface
     {
-        $data_filesystem = $request->getAttribute('filesystem.data');
-        assert($data_filesystem instanceof Filesystem);
+        $data_filesystem = Registry::filesystem()->data();
 
         $params = (array) $request->getParsedBody();
 
@@ -129,7 +128,7 @@ class ImportThumbnailsController extends AbstractAdminController
 
         foreach ($xrefs as $key => $xref) {
             $tree            = $this->tree_service->all()->get($geds[$key]);
-            $media_objects[] = Media::getInstance($xref, $tree);
+            $media_objects[] = Registry::mediaFactory()->make($xref, $tree);
         }
 
         switch ($action) {
@@ -138,7 +137,7 @@ class ImportThumbnailsController extends AbstractAdminController
                 break;
 
             case 'add':
-                $mime_type = $data_filesystem->getMimetype($thumbnail);
+                $mime_type = $data_filesystem->getMimetype($thumbnail) ?: Mime::DEFAULT_TYPE;
                 $directory = dirname($thumbnail, 2);
                 $sha1      = sha1($data_filesystem->read($thumbnail));
                 $extension = explode('/', $mime_type)[1];
@@ -180,8 +179,7 @@ class ImportThumbnailsController extends AbstractAdminController
      */
     public function webtrees1ThumbnailsData(ServerRequestInterface $request): ResponseInterface
     {
-        $data_filesystem = $request->getAttribute('filesystem.data');
-        assert($data_filesystem instanceof Filesystem);
+        $data_filesystem = Registry::filesystem()->data();
 
         $start  = (int) $request->getQueryParams()['start'];
         $length = (int) $request->getQueryParams()['length'];
@@ -190,7 +188,7 @@ class ImportThumbnailsController extends AbstractAdminController
         // Fetch all thumbnails
         $thumbnails = Collection::make($data_filesystem->listContents('', true))
             ->filter(static function (array $metadata): bool {
-                return $metadata['type'] === 'file' && strpos($metadata['path'], '/thumbs/') !== false;
+                return $metadata['type'] === 'file' && str_contains($metadata['path'], '/thumbs/');
             })
             ->map(static function (array $metadata): string {
                 return $metadata['path'];
@@ -212,16 +210,8 @@ class ImportThumbnailsController extends AbstractAdminController
                 // Turn each filename into a row for the table
                 $original = $this->findOriginalFileFromThumbnail($thumbnail);
 
-                $original_url  = route('unused-media-thumbnail', [
-                    'path' => $original,
-                    'w'    => 100,
-                    'h'    => 100,
-                ]);
-                $thumbnail_url = route('unused-media-thumbnail', [
-                    'path' => $thumbnail,
-                    'w'    => 100,
-                    'h'    => 100,
-                ]);
+                $original_url  = route(AdminMediaFileThumbnail::class, ['path' => $original]);
+                $thumbnail_url = route(AdminMediaFileThumbnail::class, ['path' => $thumbnail]);
 
                 $difference = $this->imageDiff($data_filesystem, $thumbnail, $original);
 
@@ -284,13 +274,13 @@ class ImportThumbnailsController extends AbstractAdminController
      * Compare two images, and return a quantified difference.
      * 0 (different) ... 100 (same)
      *
-     * @param Filesystem $data_filesystem
-     * @param string     $thumbnail
-     * @param string     $original
+     * @param FilesystemInterface $data_filesystem
+     * @param string              $thumbnail
+     * @param string              $original
      *
      * @return int
      */
-    private function imageDiff(Filesystem $data_filesystem, string $thumbnail, string $original): int
+    private function imageDiff(FilesystemInterface $data_filesystem, string $thumbnail, string $original): int
     {
         // The original filename was generated from the thumbnail filename.
         // It may not actually exist.
@@ -298,8 +288,8 @@ class ImportThumbnailsController extends AbstractAdminController
             return 100;
         }
 
-        $thumbnail_type = explode('/', $data_filesystem->getMimetype($thumbnail))[0];
-        $original_type  = explode('/', $data_filesystem->getMimetype($original))[0];
+        $thumbnail_type = explode('/', $data_filesystem->getMimetype($thumbnail) ?: Mime::DEFAULT_TYPE)[0];
+        $original_type  = explode('/', $data_filesystem->getMimetype($original) ?: Mime::DEFAULT_TYPE)[0];
 
         if ($thumbnail_type !== 'image') {
             // If the thumbnail file is not an image then similarity is unimportant.
@@ -333,17 +323,14 @@ class ImportThumbnailsController extends AbstractAdminController
      * This is a slow operation, add we will do it many times on
      * the "import webtrees 1 thumbnails" page so cache the results.
      *
-     * @param Filesystem $filesystem
-     * @param string     $path
+     * @param FilesystemInterface $filesystem
+     * @param string              $path
      *
      * @return int[][]
      */
-    private function scaledImagePixels(Filesystem $filesystem, string $path): array
+    private function scaledImagePixels(FilesystemInterface $filesystem, string $path): array
     {
-        $cache = app('cache.files');
-        assert($cache instanceof Cache);
-
-        return $cache->remember('pixels-' . $path, static function () use ($filesystem, $path): array {
+        return Registry::cache()->file()->remember('pixels-' . $path, static function () use ($filesystem, $path): array {
             $blob    = $filesystem->read($path);
             $manager = new ImageManager();
             $image   = $manager->make($blob)->resize(self::FINGERPRINT_PIXELS, self::FINGERPRINT_PIXELS);

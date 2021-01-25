@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,15 +20,21 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Module;
 
 use Fisharebest\Webtrees\Census\CensusInterface;
-use Fisharebest\Webtrees\Exceptions\HttpNotFoundException;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Tree;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
+use function array_keys;
 use function assert;
+use function count;
+use function e;
 use function response;
+use function str_repeat;
+use function str_replace;
+use function view;
 
 /**
  * Class CensusAssistantModule
@@ -84,10 +90,16 @@ class CensusAssistantModule extends AbstractModule
         assert($tree instanceof Tree);
 
         $params       = (array) $request->getParsedBody();
-        $individual   = Individual::getInstance($params['xref'], $tree);
-        $head         = Individual::getInstance($params['head'], $tree);
+        $individual   = Registry::individualFactory()->make($params['xref'], $tree);
+        $head         = Registry::individualFactory()->make($params['head'], $tree);
         $census_class = $params['census'];
         $census       = new $census_class();
+
+        // No head of household?  Create a fake one.
+        $head = $head ?? Registry::individualFactory()->new('X', '0 @X@ INDI', null, $tree);
+
+        // Generate columns (e.g. relationship name) using the correct language.
+        I18N::init($census->censusLanguage());
 
         if ($individual instanceof Individual && $head instanceof Individual) {
             $html = $this->censusTableRow($census, $individual, $head);
@@ -140,10 +152,9 @@ class CensusAssistantModule extends AbstractModule
             $newged .= "\n2 NOTE @" . $note->xref() . '@';
 
             // Add the census fact to the rest of the household
-            foreach (array_keys($ca_individuals) as $xref) {
-                $xref = (string) $xref;
-                if ($xref !== $individual->xref()) {
-                    Individual::getInstance($xref, $individual->tree())
+            foreach ($ca_individuals['xref'] ?? [] as $xref) {
+                if ($xref !== '' && $xref !== $individual->xref()) {
+                    Registry::individualFactory()->make($xref, $individual->tree())
                         ->updateFact($fact_id, $newged, !$keep_chan);
                 }
             }
@@ -164,31 +175,23 @@ class CensusAssistantModule extends AbstractModule
      */
     private function createNoteText(CensusInterface $census, $ca_title, $ca_place, $ca_citation, $ca_individuals, $ca_notes): string
     {
-        $text = $ca_title . "\n" . $ca_citation . "\n" . $ca_place . "\n\n";
+        $text = $ca_title . "\n" . $ca_citation . "\n" . $ca_place . "\n\n|";
 
-        foreach ($census->columns() as $n => $column) {
-            if ($n === 0) {
-                $text .= "\n";
-            } else {
-                $text .= ' | ';
+        foreach ($census->columns() as $column) {
+            $text .= ' ' . $column->abbreviation() . ' |';
+        }
+
+        $text .= "\n|" . str_repeat(' ----- |', count($census->columns()));
+
+        foreach (array_keys($ca_individuals['xref'] ?? []) as $key) {
+            $text .= "\n|";
+
+            foreach ($census->columns() as $n => $column) {
+                $text .= ' ' . $ca_individuals[$n][$key] . ' |';
             }
-            $text .= $column->abbreviation();
         }
 
-        foreach ($census->columns() as $n => $column) {
-            if ($n === 0) {
-                $text .= "\n";
-            } else {
-                $text .= ' | ';
-            }
-            $text .= '-----';
-        }
-
-        foreach ($ca_individuals as $columns) {
-            $text .= "\n" . implode(' | ', $columns);
-        }
-
-        return $text . "\n\n" . $ca_notes;
+        return $text . "\n\n" . strtr($ca_notes, ["\r" => '']);
     }
 
     /**
@@ -221,7 +224,15 @@ class CensusAssistantModule extends AbstractModule
      */
     public function censusTableEmptyRow(CensusInterface $census): string
     {
-        return '<tr class="wt-census-assistant-row"><td hidden></td>' . str_repeat('<td class="wt-census-assistant-field p-0"><input type="text" class="form-control wt-census-assistant-form-control p-0"></td>', count($census->columns())) . '<td><a href="#" title="' . I18N::translate('Remove') . '">' . view('icons/delete') . '</a></td></tr>';
+        $html = '<td class="wt-census-assistant-field" hidden><input type="hidden" name="ca_individuals[xref][]"></td>';
+
+        foreach ($census->columns() as $n => $column) {
+            $html .= '<td class="wt-census-assistant-field p-0"><input class="form-control wt-census-assistant-form-control p-0" type="text" name="ca_individuals[' . $n . '][]"></td>';
+        }
+
+        $html .= '<td class="wt-census-assistant-field"><a href="#" title="' . I18N::translate('Remove') . '">' . view('icons/delete') . '</a></td>';
+
+        return '<tr class="wt-census-assistant-row">' . $html . '</tr>';
     }
 
     /**
@@ -237,11 +248,14 @@ class CensusAssistantModule extends AbstractModule
      */
     public function censusTableRow(CensusInterface $census, Individual $individual, Individual $head): string
     {
-        $html = '';
-        foreach ($census->columns() as $column) {
-            $html .= '<td class="wt-census-assistant-field p-0"><input class="form-control wt-census-assistant-form-control p-0" type="text" value="' . $column->generate($individual, $head) . '" name="ca_individuals[' . $individual->xref() . '][]"></td>';
+        $html = '<td class="wt-census-assistant-field" hidden><input type="hidden" name="ca_individuals[xref][]" value="' . e($individual->xref()) . '"></td>';
+
+        foreach ($census->columns() as $n => $column) {
+            $html .= '<td class="wt-census-assistant-field p-0"><input class="form-control wt-census-assistant-form-control p-0" type="text" value="' . $column->generate($individual, $head) . '" name="ca_individuals[' . $n . '][]"></td>';
         }
 
-        return '<tr class="wt-census-assistant-row"><td class="wt-census-assistant-field" hidden>' . $individual->xref() . '</td>' . $html . '<td class="wt-census-assistant-field"><a href="#" title="' . I18N::translate('Remove') . '">' . view('icons/delete') . '</a></td></tr>';
+        $html .= '<td class="wt-census-assistant-field"><a href="#" title="' . I18N::translate('Remove') . '">' . view('icons/delete') . '</a></td>';
+
+        return '<tr class="wt-census-assistant-row">' . $html . '</tr>';
     }
 }

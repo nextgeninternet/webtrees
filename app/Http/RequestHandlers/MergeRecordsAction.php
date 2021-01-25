@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
-use Fisharebest\Webtrees\GedcomRecord;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -50,14 +50,14 @@ class MergeRecordsAction implements RequestHandlerInterface
         $xref2 = $params['xref2'] ?? '';
 
         // Merge record2 into record1
-        $record1 = GedcomRecord::getInstance($xref1, $tree);
-        $record2 = GedcomRecord::getInstance($xref2, $tree);
+        $record1 = Registry::gedcomRecordFactory()->make($xref1, $tree);
+        $record2 = Registry::gedcomRecordFactory()->make($xref2, $tree);
 
         if (
             $record1 === null ||
             $record2 === null ||
             $record1 === $record2 ||
-            $record1::RECORD_TYPE !== $record2::RECORD_TYPE ||
+            $record1->tag() !== $record2->tag() ||
             $record1->isPendingDeletion() ||
             $record2->isPendingDeletion()
         ) {

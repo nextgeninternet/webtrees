@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -21,7 +21,9 @@ namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
 use Fig\Http\Message\StatusCodeInterface;
 use Fisharebest\Webtrees\Exceptions\SourceNotFoundException;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Services\TreeService;
+use Fisharebest\Webtrees\Site;
 use Fisharebest\Webtrees\Source;
 use Fisharebest\Webtrees\Tree;
 use Psr\Http\Message\ResponseInterface;
@@ -53,12 +55,13 @@ class RedirectSourcePhp implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $ged  = $request->getQueryParams()['ged'] ?? null;
-        $tree = $this->tree_service->all()->get($ged);
+        $query = $request->getQueryParams();
+        $ged   = $query['ged'] ?? Site::getPreference('DEFAULT_GEDCOM');
+        $sid   = $query['sid'] ?? '';
+        $tree  = $this->tree_service->all()->get($ged);
 
         if ($tree instanceof Tree) {
-            $xref   = $request->getQueryParams()['sid'] ?? '';
-            $source = Source::getInstance($xref, $tree);
+            $source = Registry::sourceFactory()->make($sid, $tree);
 
             if ($source instanceof Source) {
                 return redirect($source->url(), StatusCodeInterface::STATUS_MOVED_PERMANENTLY);

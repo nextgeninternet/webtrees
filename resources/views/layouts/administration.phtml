@@ -11,7 +11,6 @@ use Fisharebest\Webtrees\Module\ModuleCustomInterface;
 use Fisharebest\Webtrees\Module\ModuleGlobalInterface;
 use Fisharebest\Webtrees\Services\ModuleService;
 use Fisharebest\Webtrees\View;
-use Psr\Http\Message\ServerRequestInterface;
 
 /** @var string $title */
 /** @var string $content */
@@ -25,7 +24,7 @@ use Psr\Http\Message\ServerRequestInterface;
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf" content="<?= e(csrf_token()) ?>">
 
-        <title><?= $title ?></title>
+        <title><?= strip_tags($title) ?></title>
 
         <link rel="icon" href="<?= e(asset('favicon.ico')) ?>" type="image/x-icon">
 
@@ -40,7 +39,7 @@ use Psr\Http\Message\ServerRequestInterface;
 
         <?= DebugBar::renderHead() ?>
     </head>
-    <body class="container wt-global wt-control-panel wt-route-<?= e(app(ServerRequestInterface::class)->getAttribute('route')) ?>">
+    <body class="container-lg wt-global wt-control-panel">
         <header>
             <div class="wt-accessibility-links position-fixed">
                 <a class="sr-only sr-only-focusable btn btn-info btn-sm" href="#content">
@@ -64,7 +63,7 @@ use Psr\Http\Message\ServerRequestInterface;
                     </div>
                 </li>
                 <li class="nav-item menu-logout">
-                    <a class="nav-link" href="#" data-post-url="<?= e(route(Logout::class)) ?>"><?= I18N::translate('Sign out') ?></a>
+                    <a class="nav-link" href="#" data-post-url="<?= e(route(Logout::class)) ?>" data-reload-url="<?= e(route(HomePage::class)) ?>"><?= I18N::translate('Sign out') ?></a>
                 </li>
             </ul>
         </header>

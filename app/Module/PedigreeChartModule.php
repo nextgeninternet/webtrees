@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -22,7 +22,7 @@ namespace Fisharebest\Webtrees\Module;
 use Aura\Router\RouterContainer;
 use Fig\Http\Message\RequestMethodInterface;
 use Fisharebest\Webtrees\Auth;
-use Fisharebest\Webtrees\Functions\FunctionsEdit;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Menu;
@@ -47,8 +47,7 @@ class PedigreeChartModule extends AbstractModule implements ModuleChartInterface
 {
     use ModuleChartTrait;
 
-    private const ROUTE_NAME = 'pedigree-chart';
-    private const ROUTE_URL  = '/tree/{tree}/pedigree-{style}-{generations}/{xref}';
+    protected const ROUTE_URL  = '/tree/{tree}/pedigree-{style}-{generations}/{xref}';
 
     // Chart styles
     public const STYLE_LEFT  = 'left';
@@ -100,7 +99,7 @@ class PedigreeChartModule extends AbstractModule implements ModuleChartInterface
         assert($router_container instanceof RouterContainer);
 
         $router_container->getMap()
-            ->get(self::ROUTE_NAME, self::ROUTE_URL, $this)
+            ->get(static::class, static::ROUTE_URL, $this)
             ->allows(RequestMethodInterface::METHOD_POST)
             ->tokens([
                 'generations' => '\d+',
@@ -175,10 +174,10 @@ class PedigreeChartModule extends AbstractModule implements ModuleChartInterface
      */
     public function chartUrl(Individual $individual, array $parameters = []): string
     {
-        return route(self::ROUTE_NAME, [
+        return route(static::class, [
                 'xref' => $individual->xref(),
                 'tree' => $individual->tree()->name(),
-            ] + $parameters + self::DEFAULT_PARAMETERS);
+            ] + $parameters + static::DEFAULT_PARAMETERS);
     }
 
     /**
@@ -194,7 +193,7 @@ class PedigreeChartModule extends AbstractModule implements ModuleChartInterface
         $xref = $request->getAttribute('xref');
         assert(is_string($xref));
 
-        $individual = Individual::getInstance($xref, $tree);
+        $individual = Registry::individualFactory()->make($xref, $tree);
         $individual = Auth::checkIndividualAccess($individual, false, true);
 
         $ajax        = $request->getQueryParams()['ajax'] ?? '';
@@ -206,7 +205,7 @@ class PedigreeChartModule extends AbstractModule implements ModuleChartInterface
         if ($request->getMethod() === RequestMethodInterface::METHOD_POST) {
             $params = (array) $request->getParsedBody();
 
-            return redirect(route(self::ROUTE_NAME, [
+            return redirect(route(self::class, [
                 'tree'        => $request->getAttribute('tree')->name(),
                 'xref'        => $params['xref'],
                 'style'       => $params['style'],
@@ -214,7 +213,7 @@ class PedigreeChartModule extends AbstractModule implements ModuleChartInterface
             ]));
         }
 
-        Auth::checkComponentAccess($this, 'chart', $tree, $user);
+        Auth::checkComponentAccess($this, ModuleChartInterface::class, $tree, $user);
 
         $generations = min($generations, self::MAXIMUM_GENERATIONS);
         $generations = max($generations, self::MINIMUM_GENERATIONS);
@@ -249,6 +248,7 @@ class PedigreeChartModule extends AbstractModule implements ModuleChartInterface
                 'style'       => $style,
                 'layout'      => 'right',
                 'links'       => $links,
+                'spacer'      => $this->spacer(),
             ]);
         }
 
@@ -262,14 +262,25 @@ class PedigreeChartModule extends AbstractModule implements ModuleChartInterface
         return $this->viewResponse('modules/pedigree-chart/page', [
             'ajax_url'           => $ajax_url,
             'generations'        => $generations,
-            'generation_options' => $this->generationOptions(),
             'individual'         => $individual,
             'module'             => $this->name(),
+            'max_generations'    => self::MAXIMUM_GENERATIONS,
+            'min_generations'    => self::MINIMUM_GENERATIONS,
             'style'              => $style,
             'styles'             => $this->styles(),
             'title'              => $this->chartTitle($individual),
             'tree'               => $tree,
         ]);
+    }
+
+    /**
+     * A link-sized spacer, to maintain the chart layout
+     *
+     * @return string
+     */
+    public function spacer(): string
+    {
+        return '<span class="px-2">' . view('icons/spacer') . '</span>';
     }
 
     /**
@@ -359,14 +370,6 @@ class PedigreeChartModule extends AbstractModule implements ModuleChartInterface
         ]);
 
         return '<a class="dropdown-item" href="' . e($url) . '" title="' . strip_tags($title) . '">' . $text . '</a>';
-    }
-
-    /**
-     * @return string[]
-     */
-    protected function generationOptions(): array
-    {
-        return FunctionsEdit::numericOptions(range(self::MINIMUM_GENERATIONS, self::MAXIMUM_GENERATIONS));
     }
 
     /**

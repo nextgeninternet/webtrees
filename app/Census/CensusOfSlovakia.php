@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-    
+
 namespace Fisharebest\Webtrees\Census;
 
 /**
@@ -42,5 +42,15 @@ class CensusOfSlovakia extends Census implements CensusPlaceInterface
     public function censusPlace(): string
     {
         return 'Slovensko';
+    }
+
+    /**
+     * In which language was this census written.
+     *
+     * @return string
+     */
+    public function censusLanguage(): string
+    {
+        return 'sk';
     }
 }

@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,6 +20,8 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
 use Fisharebest\Webtrees\Media;
+use Fisharebest\Webtrees\Registry;
+use Fisharebest\Webtrees\Services\SearchService;
 use Fisharebest\Webtrees\Tree;
 use Illuminate\Support\Collection;
 
@@ -30,6 +32,20 @@ use function view;
  */
 class Select2MediaObject extends AbstractSelect2Handler
 {
+    /** @var SearchService */
+    protected $search_service;
+
+    /**
+     * Select2MediaObject constructor.
+     *
+     * @param SearchService $search_service
+     */
+    public function __construct(
+        SearchService $search_service
+    ) {
+        $this->search_service = $search_service;
+    }
+
     /**
      * Perform the search
      *
@@ -37,13 +53,14 @@ class Select2MediaObject extends AbstractSelect2Handler
      * @param string $query
      * @param int    $offset
      * @param int    $limit
+     * @param string $at
      *
      * @return Collection<array<string,string>>
      */
-    protected function search(Tree $tree, string $query, int $offset, int $limit): Collection
+    protected function search(Tree $tree, string $query, int $offset, int $limit, string $at): Collection
     {
         // Search by XREF
-        $media = Media::getInstance($query, $tree);
+        $media = Registry::mediaFactory()->make($query, $tree);
 
         if ($media instanceof Media) {
             $results = new Collection([$media]);
@@ -51,9 +68,9 @@ class Select2MediaObject extends AbstractSelect2Handler
             $results = $this->search_service->searchMedia([$tree], [$query], $offset, $limit);
         }
 
-        return $results->map(static function (Media $media): array {
+        return $results->map(static function (Media $media) use ($at): array {
             return [
-                'id'    => $media->xref(),
+                'id'    => $at . $media->xref() . $at,
                 'text'  => view('selects/media', ['media' => $media]),
                 'title' => ' ',
             ];

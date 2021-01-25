@@ -4,8 +4,10 @@ use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Functions\FunctionsPrint;
 use Fisharebest\Webtrees\Functions\FunctionsPrintFacts;
 use Fisharebest\Webtrees\GedcomTag;
+use Fisharebest\Webtrees\Http\RequestHandlers\AddMediaFileModal;
 use Fisharebest\Webtrees\Http\RequestHandlers\AddNewFact;
 use Fisharebest\Webtrees\Http\RequestHandlers\DeleteFact;
+use Fisharebest\Webtrees\Http\RequestHandlers\EditMediaFileModal;
 use Fisharebest\Webtrees\Http\RequestHandlers\PendingChangesAcceptRecord;
 use Fisharebest\Webtrees\Http\RequestHandlers\PendingChangesRejectRecord;
 use Fisharebest\Webtrees\I18N;
@@ -48,30 +50,34 @@ use Illuminate\Support\Collection;
 
 <div class="wt-page-content">
     <ul class="nav nav-tabs" role="tablist">
-        <li class="nav-item">
+        <li class="nav-item" role="presentation">
             <a class="nav-link active" data-toggle="tab" role="tab" href="#details">
                 <?= I18N::translate('Details') ?>
             </a>
         </li>
-        <li class="nav-item">
+
+        <li class="nav-item" role="presentation">
             <a class="nav-link<?= $individuals->isEmpty() ? ' text-muted' : '' ?>" data-toggle="tab" role="tab" href="#individuals">
                 <?= I18N::translate('Individuals') ?>
                 <?= view('components/badge', ['count' => $individuals->count()]) ?>
             </a>
         </li>
-        <li class="nav-item">
+
+        <li class="nav-item" role="presentation">
             <a class="nav-link<?= $families->isEmpty() ? ' text-muted' : '' ?>" data-toggle="tab" role="tab" href="#families">
                 <?= I18N::translate('Families') ?>
                 <?= view('components/badge', ['count' => $families->count()]) ?>
             </a>
         </li>
-        <li class="nav-item">
+
+        <li class="nav-item" role="presentation">
             <a class="nav-link<?= $sources->isEmpty() ? ' text-muted' : '' ?>" data-toggle="tab" role="tab" href="#sources">
                 <?= I18N::translate('Sources') ?>
                 <?= view('components/badge', ['count' => $sources->count()]) ?>
             </a>
         </li>
-        <li class="nav-item">
+
+        <li class="nav-item" role="presentation">
             <a class="nav-link<?= $notes->isEmpty() ? ' text-muted' : '' ?>" data-toggle="tab" role="tab" href="#notes">
                 <?= I18N::translate('Notes') ?>
                 <?= view('components/badge', ['count' => $notes->count()]) ?>
@@ -88,7 +94,7 @@ use Illuminate\Support\Collection;
                             <?= I18N::translate('Media file') ?>
                             <?php if ($media->canEdit()) : ?>
                                 <div class="editfacts nowrap">
-                                    <a class="btn btn-link" href="#" data-toggle="modal" data-target="#wt-ajax-modal" data-href="<?= route('edit-media-file', ['tree' => $media->tree()->name(), 'xref' => $media->xref(), 'fact_id' => $media_file->factId()]) ?>" title="<?= I18N::translate('Edit') ?>">
+                                    <a class="btn btn-link" href="#" data-toggle="modal" data-backdrop="static" data-target="#wt-ajax-modal" data-href="<?= route(EditMediaFileModal::class, ['tree' => $media->tree()->name(), 'xref' => $media->xref(), 'fact_id' => $media_file->factId()]) ?>" title="<?= I18N::translate('Edit') ?>">
                                         <?= view('icons/edit') ?>
                                         <span class="sr-only">
                                         <?= I18N::translate('Edit') ?>
@@ -110,24 +116,34 @@ use Illuminate\Support\Collection;
                         <td class="d-flex justify-content-between">
                             <div>
                                 <?php if ($media_file->isExternal()) : ?>
-                                    <?= GedcomTag::getLabelValue('URL', $media_file->filename()) ?>
+                                    <?= GedcomTag::getLabelValue('URL', e($media_file->filename())) ?>
                                 <?php elseif (Auth::isEditor($media->tree())) :?>
                                     <?php if (!$media_file->fileExists($data_filesystem)) : ?>
                                         <p class="alert alert-danger">
-                                            <?= I18N::translate('The file “%s” does not exist.', $media_file->filename()) ?>
+                                            <?= I18N::translate('The file “%s” does not exist.', e($media_file->filename())) ?>
                                         </p>
                                     <?php endif ?>
-                                    <?= GedcomTag::getLabelValue('FILE', $media_file->filename()) ?>
+                                    <?= GedcomTag::getLabelValue('FILE', e($media_file->filename())) ?>
                                 <?php endif ?>
 
                                 <?= GedcomTag::getLabelValue('TITL', e($media_file->title())) ?>
-                                <?= GedcomTag::getLabelValue('TYPE', e($media_file->type())) ?>
+                                <?= GedcomTag::getLabelValue('TYPE', GedcomTag::getFileFormTypeValue(e($media_file->type()))) ?>
                                 <?= GedcomTag::getLabelValue('FORM', e($media_file->format())) ?>
                             </div>
 
                             <div>
                                 <?php if (!$media_file->isExternal()) : ?>
-                                    <?= $media_file->displayImage(200, 150, 'contain', []) ?>
+                                    <?php if (explode('/', $media_file->mimeType())[0] === 'audio') : ?>
+                                    <audio controls>
+                                        <source src="<?= e($media_file->downloadUrl('inline')) ?>" type="<?= $media_file->mimeType() ?>">
+                                    </audio>
+                                    <?php elseif (explode('/', $media_file->mimeType())[0] === 'video') : ?>
+                                        <video controls width="300">
+                                            <source src="<?= e($media_file->downloadUrl('inline')) ?>" type="<?= $media_file->mimeType() ?>">
+                                        </video>
+                                    <?php else : ?>
+                                        <?= $media_file->displayImage(200, 150, 'contain', []) ?>
+                                    <?php endif ?>
                                     <?php if ($media->tree()->getPreference('SHOW_MEDIA_DOWNLOAD') >= Auth::accessLevel($media->tree()) && $media_file->fileExists($data_filesystem)) : ?>
                                         <br>
                                         <a href="<?= e($media_file->downloadUrl('attachment')) ?>">
@@ -140,14 +156,12 @@ use Illuminate\Support\Collection;
                     </tr>
                 <?php endforeach ?>
                 <?php foreach ($facts as $fact) : ?>
-                    <?php if ($fact->getTag() !== 'FILE') : ?>
-                        <?php FunctionsPrintFacts::printFact($fact, $media) ?>
-                    <?php endif ?>
+                    <?php FunctionsPrintFacts::printFact($fact, $media) ?>
                 <?php endforeach ?>
                 <?php if ($media->canEdit()) : ?>
                     <?= view('edit/paste-fact-row', ['record' => $media, 'facts' => $clipboard_facts]) ?>
 
-                    <?php FunctionsPrint::printAddNewFact($media, $facts, 'OBJE') ?>
+                    <?php FunctionsPrint::printAddNewFact($media, $facts, Media::RECORD_TYPE) ?>
                     <tr>
                         <th>
                             <?= I18N::translate('Source') ?>
@@ -183,7 +197,7 @@ use Illuminate\Support\Collection;
                             <?= I18N::translate('Media file') ?>
                         </th>
                         <td>
-                            <a href="#" data-href="<?= e(route('add-media-file', ['tree' => $media->tree()->name(), 'xref' => $media->xref()])) ?>" data-target="#wt-ajax-modal" data-toggle="modal">
+                            <a href="#" data-href="<?= e(route(AddMediaFileModal::class, ['tree' => $media->tree()->name(), 'xref' => $media->xref()])) ?>" data-target="#wt-ajax-modal" data-toggle="modal" data-backdrop="static">
                                 <?= I18N::translate('Add a media file') ?>
                             </a>
                         </td>

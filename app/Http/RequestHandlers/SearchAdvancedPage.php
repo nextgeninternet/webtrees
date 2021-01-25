@@ -29,6 +29,12 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
+use function array_fill_keys;
+use function array_filter;
+use function array_key_exists;
+use function assert;
+use function explode;
+
 /**
  * Search for genealogy data
  */
@@ -67,7 +73,6 @@ class SearchAdvancedPage implements RequestHandlerInterface
         'BLES:PLAC',
         'BURI:DATE',
         'BURI:PLAC',
-        'CAST',
         'CENS:DATE',
         'CENS:PLAC',
         'CHAN:DATE',
@@ -77,7 +82,6 @@ class SearchAdvancedPage implements RequestHandlerInterface
         'CREM:DATE',
         'CREM:PLAC',
         'DSCR',
-        'EMAIL',
         'EMIG:DATE',
         'EMIG:PLAC',
         'ENDL:DATE',
@@ -94,7 +98,6 @@ class SearchAdvancedPage implements RequestHandlerInterface
         'FAMS:NOTE',
         'FAMS:SLGS:DATE',
         'FAMS:SLGS:PLAC',
-        'FAX',
         'FCOM:DATE',
         'FCOM:PLAC',
         'IMMI:DATE',
@@ -112,15 +115,12 @@ class SearchAdvancedPage implements RequestHandlerInterface
         'ORDN:PLAC',
         'REFN',
         'RELI',
-        'RESI',
         'RESI:DATE',
+        'RESI:EMAIL',
         'RESI:PLAC',
         'SLGC:DATE',
         'SLGC:PLAC',
         'TITL',
-        '_BRTM:DATE',
-        '_BRTM:PLAC',
-        '_MILI',
     ];
 
     /** @var SearchService */
@@ -152,10 +152,10 @@ class SearchAdvancedPage implements RequestHandlerInterface
 
         $params = $request->getQueryParams();
 
-        $fields      = $params['fields'] ?? $default_fields;
-        $modifiers   = $params['modifiers'] ?? [];
+        $fields    = $params['fields'] ?? $default_fields;
+        $modifiers = $params['modifiers'] ?? [];
 
-        $other_fields = $this->otherFields($fields);
+        $other_fields = $this->otherFields($tree, $fields);
         $date_options = $this->dateOptions();
         $name_options = $this->nameOptions();
 
@@ -170,6 +170,7 @@ class SearchAdvancedPage implements RequestHandlerInterface
         return $this->viewResponse('search-advanced-page', [
             'date_options' => $date_options,
             'fields'       => $fields,
+            'field_labels' => $this->customFieldLabels(),
             'individuals'  => $individuals,
             'modifiers'    => $modifiers,
             'name_options' => $name_options,
@@ -182,21 +183,53 @@ class SearchAdvancedPage implements RequestHandlerInterface
     /**
      * Extra search fields to add to the advanced search
      *
+     * @param Tree     $tree
      * @param string[] $fields
      *
-     * @return string[]
+     * @return array<string,string>
      */
-    private function otherFields(array $fields): array
+    private function otherFields(Tree $tree, array $fields): array
     {
-        $unused = array_diff(self::OTHER_ADVANCED_FIELDS, array_keys($fields));
+        $default_facts     = new Collection(self::OTHER_ADVANCED_FIELDS);
+        $indi_facts_add    = new Collection(explode(',', $tree->getPreference('INDI_FACTS_ADD')));
+        $indi_facts_unique = new Collection(explode(',', $tree->getPreference('INDI_FACTS_UNIQUE')));
 
-        $other_fields = [];
+        return $default_facts
+            ->merge($indi_facts_add)
+            ->merge($indi_facts_unique)
+            ->unique()
+            ->reject(static function (string $field) use ($fields): bool {
+                return
+                    array_key_exists($field, $fields) ||
+                    array_key_exists($field . ':DATE', $fields) ||
+                    array_key_exists($field . ':PLAC', $fields);
+            })
+            ->mapWithKeys(static function (string $fact): array {
+                return [$fact => GedcomTag::getLabel($fact)];
+            })
+            ->all();
+    }
 
-        foreach ($unused as $tag) {
-            $other_fields[$tag] = GedcomTag::getLabel($tag);
-        }
 
-        return $other_fields;
+    /**
+     * We use some pseudo-GEDCOM tags for some of our fields.
+     *
+     * @return array<string,string>
+     */
+    private function customFieldLabels(): array
+    {
+        return [
+            'FAMS:DIV:DATE'       => I18N::translate('Date of divorce'),
+            'FAMS:NOTE'           => I18N::translate('Spouse note'),
+            'FAMS:SLGS:DATE'      => I18N::translate('Date of LDS spouse sealing'),
+            'FAMS:SLGS:PLAC'      => I18N::translate('Place of LDS spouse sealing'),
+            'FAMS:MARR:DATE'      => I18N::translate('Date of marriage'),
+            'FAMS:MARR:PLAC'      => I18N::translate('Place of marriage'),
+            'FAMC:HUSB:NAME:GIVN' => I18N::translate('Given names'),
+            'FAMC:HUSB:NAME:SURN' => I18N::translate('Surname'),
+            'FAMC:WIFE:NAME:GIVN' => I18N::translate('Given names'),
+            'FAMC:WIFE:NAME:SURN' => I18N::translate('Surname'),
+        ];
     }
 
     /**
@@ -208,9 +241,11 @@ class SearchAdvancedPage implements RequestHandlerInterface
     {
         return [
             0  => I18N::translate('Exact date'),
+            1  => I18N::plural('±%s year', '±%s years', 1, I18N::number(1)),
             2  => I18N::plural('±%s year', '±%s years', 2, I18N::number(2)),
             5  => I18N::plural('±%s year', '±%s years', 5, I18N::number(5)),
             10 => I18N::plural('±%s year', '±%s years', 10, I18N::number(10)),
+            20 => I18N::plural('±%s year', '±%s years', 20, I18N::number(20)),
         ];
     }
 

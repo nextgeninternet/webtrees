@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,13 +19,15 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Statistics\Repository;
 
-use Fisharebest\Webtrees\Date;
+use Fisharebest\Webtrees\Carbon;
 use Fisharebest\Webtrees\Fact;
-use Fisharebest\Webtrees\GedcomRecord;
+use Fisharebest\Webtrees\Registry;
+use Fisharebest\Webtrees\Header;
 use Fisharebest\Webtrees\Statistics\Repository\Interfaces\GedcomRepositoryInterface;
 use Fisharebest\Webtrees\Tree;
 use Illuminate\Database\Capsule\Manager as DB;
-use Illuminate\Database\Query\Builder;
+
+use function str_contains;
 
 /**
  * A repository providing methods for GEDCOM related statistics.
@@ -58,9 +60,9 @@ class GedcomRepository implements GedcomRepositoryInterface
         $version = '';
         $source  = '';
 
-        $head = GedcomRecord::getInstance('HEAD', $this->tree);
+        $head = Registry::headerFactory()->make('HEAD', $this->tree);
 
-        if ($head instanceof GedcomRecord) {
+        if ($head instanceof Header) {
             $sour = $head->facts(['SOUR'])->first();
 
             if ($sour instanceof Fact) {
@@ -78,7 +80,7 @@ class GedcomRepository implements GedcomRepositoryInterface
     }
 
     /**
-     * @inheritDoc
+     * @return string
      */
     public function gedcomFilename(): string
     {
@@ -86,7 +88,7 @@ class GedcomRepository implements GedcomRepositoryInterface
     }
 
     /**
-     * @inheritDoc
+     * @return int
      */
     public function gedcomId(): int
     {
@@ -94,7 +96,7 @@ class GedcomRepository implements GedcomRepositoryInterface
     }
 
     /**
-     * @inheritDoc
+     * @return string
      */
     public function gedcomTitle(): string
     {
@@ -102,7 +104,7 @@ class GedcomRepository implements GedcomRepositoryInterface
     }
 
     /**
-     * @inheritDoc
+     * @return string
      */
     public function gedcomCreatedSoftware(): string
     {
@@ -110,18 +112,14 @@ class GedcomRepository implements GedcomRepositoryInterface
     }
 
     /**
-     * @inheritDoc
+     * @return string
      */
     public function gedcomCreatedVersion(): string
     {
         $head = $this->gedcomHead();
 
-        if ($head === null) {
-            return '';
-        }
-
         // Fix broken version string in Family Tree Maker
-        if (strpos($head[1], 'Family Tree Maker ') !== false) {
+        if (str_contains($head[1], 'Family Tree Maker ')) {
             $p       = strpos($head[1], '(') + 1;
             $p2      = strpos($head[1], ')');
             $head[1] = substr($head[1], $p, $p2 - $p);
@@ -136,17 +134,18 @@ class GedcomRepository implements GedcomRepositoryInterface
     }
 
     /**
-     * @inheritDoc
+     * @return string
+     * @throws \Exception
      */
     public function gedcomDate(): string
     {
-        $head = GedcomRecord::getInstance('HEAD', $this->tree);
+        $head = Registry::headerFactory()->make('HEAD', $this->tree);
 
-        if ($head instanceof GedcomRecord) {
+        if ($head instanceof Header) {
             $fact = $head->facts(['DATE'])->first();
 
             if ($fact instanceof Fact) {
-                return (new Date($fact->value()))->display();
+                return Carbon::make($fact->value())->local()->isoFormat('LL');
             }
         }
 
@@ -154,30 +153,26 @@ class GedcomRepository implements GedcomRepositoryInterface
     }
 
     /**
-     * @inheritDoc
+     * @return string
      */
     public function gedcomUpdated(): string
     {
-        $row = DB::table('dates')
-            ->select(['d_year', 'd_month', 'd_day'])
-            ->where('d_julianday1', '=', function (Builder $query): void {
-                $query->selectRaw('MAX(d_julianday1)')
-                    ->from('dates')
-                    ->where('d_file', '=', $this->tree->id())
-                    ->where('d_fact', '=', 'CHAN');
-            })
+        $row = DB::table('change')
+            ->where('gedcom_id', '=', $this->tree->id())
+            ->where('status', '=', 'accepted')
+            ->orderBy('change_id', 'DESC')
+            ->select(['change_time'])
             ->first();
 
-        if ($row) {
-            $date = new Date("{$row->d_day} {$row->d_month} {$row->d_year}");
-            return $date->display();
+        if ($row === null) {
+            return $this->gedcomDate();
         }
 
-        return $this->gedcomDate();
+        return Carbon::make($row->change_time)->local()->isoFormat('LL');
     }
 
     /**
-     * @inheritDoc
+     * @return string
      */
     public function gedcomRootId(): string
     {

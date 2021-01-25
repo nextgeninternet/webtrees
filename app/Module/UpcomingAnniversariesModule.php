@@ -41,9 +41,18 @@ class UpcomingAnniversariesModule extends AbstractModule implements ModuleBlockI
     private const DEFAULT_SORT   = 'alpha';
     private const DEFAULT_STYLE  = 'table';
 
+    // Initial sorting for datatables
+    private const DATATABLES_ORDER = [
+        'alpha' => [[0, 'asc']],
+        'anniv' => [[1, 'asc']],
+    ];
+
     // Can show this number of days into the future.
-    private const MIN_DAYS = 1;
     private const MAX_DAYS = 30;
+
+    // Pagination
+    private const LIMIT_LOW  = 10;
+    private const LIMIT_HIGH = 20;
 
     // All standard GEDCOM 5.5.1 events except CENS, RESI and EVEN
     private const ALL_EVENTS = [
@@ -157,11 +166,17 @@ class UpcomingAnniversariesModule extends AbstractModule implements ModuleBlockI
             }
         } elseif ($infoStyle === 'list') {
             $content = view('lists/anniversaries-list', [
-                'facts' => $facts,
+                'id'         => $block_id,
+                'facts'      => $facts,
+                'limit_low'  => self::LIMIT_LOW,
+                'limit_high' => self::LIMIT_HIGH,
             ]);
         } else {
             $content = view('lists/anniversaries-table', [
-                'facts' => $facts,
+                'facts'      => $facts,
+                'limit_low'  => self::LIMIT_LOW,
+                'limit_high' => self::LIMIT_HIGH,
+                'order'      => self::DATATABLES_ORDER[$sortStyle],
             ]);
         }
 

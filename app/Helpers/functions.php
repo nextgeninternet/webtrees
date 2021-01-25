@@ -122,14 +122,14 @@ function response($content = '', $code = StatusCodeInterface::STATUS_OK, $header
     if ($headers === []) {
         if (is_string($content)) {
             $headers = [
-                'Content-Type'   => 'text/html; charset=utf-8',
-                'Content-Length' => strlen($content),
+                'Content-Type'   => 'text/html; charset=UTF-8',
+                'Content-Length' => (string) strlen($content),
             ];
         } else {
-            $content = json_encode($content, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+            $content = json_encode($content, JSON_UNESCAPED_UNICODE);
             $headers = [
                 'Content-Type'   => 'application/json',
-                'Content-Length' => strlen($content),
+                'Content-Length' => (string) strlen($content),
             ];
         }
     }
@@ -173,7 +173,7 @@ function route(string $route_name, array $parameters = []): string
 
     // Aura ignores parameters that are not tokens.  We need to add them as query parameters.
     $parameters = array_filter($parameters, static function (string $key) use ($route): bool {
-        return strpos($route->path, '{' . $key . '}') === false && strpos($route->path, '{/' . $key . '}') === false;
+        return !str_contains($route->path, '{' . $key . '}') && !str_contains($route->path, '{/' . $key . '}');
     }, ARRAY_FILTER_USE_KEY);
 
     if ($request->getAttribute('rewrite_urls') === '1') {

@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,14 +20,10 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
 use Fig\Http\Message\StatusCodeInterface;
+use Fisharebest\Webtrees\Age;
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Date;
 use Fisharebest\Webtrees\Fact;
-use Fisharebest\Webtrees\Functions\FunctionsDate;
-use Fisharebest\Webtrees\Functions\FunctionsPrint;
-use Fisharebest\Webtrees\Functions\FunctionsPrintFacts;
-use Fisharebest\Webtrees\GedcomCode\GedcomCodeName;
-use Fisharebest\Webtrees\GedcomTag;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
@@ -35,6 +31,7 @@ use Fisharebest\Webtrees\Media;
 use Fisharebest\Webtrees\MediaFile;
 use Fisharebest\Webtrees\Module\ModuleSidebarInterface;
 use Fisharebest\Webtrees\Module\ModuleTabInterface;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Services\ClipboardService;
 use Fisharebest\Webtrees\Services\ModuleService;
 use Fisharebest\Webtrees\Services\UserService;
@@ -45,18 +42,17 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use stdClass;
 
+use function array_map;
 use function assert;
+use function date;
 use function e;
 use function explode;
+use function implode;
 use function is_string;
-use function ob_get_clean;
-use function ob_start;
-use function preg_match_all;
-use function preg_replace;
 use function redirect;
 use function route;
-use function str_replace;
-use function strpos;
+use function strtoupper;
+use function view;
 
 /**
  * Show an individual's page.
@@ -101,25 +97,12 @@ class IndividualPage implements RequestHandlerInterface
         $xref = $request->getAttribute('xref');
         assert(is_string($xref));
 
-        $individual = Individual::getInstance($xref, $tree);
+        $individual = Registry::individualFactory()->make($xref, $tree);
         $individual = Auth::checkIndividualAccess($individual);
 
         // Redirect to correct xref/slug
         if ($individual->xref() !== $xref || $request->getAttribute('slug') !== $individual->slug()) {
             return redirect($individual->url(), StatusCodeInterface::STATUS_MOVED_PERMANENTLY);
-        }
-
-        // What is (was) the age of the individual
-        $bdate = $individual->getBirthDate();
-        $ddate = $individual->getDeathDate();
-        if ($bdate->isOK() && !$individual->isDead()) {
-            // If living display age
-            $age = ' (' . I18N::translate('age') . ' ' . FunctionsDate::getAgeAtEvent(Date::getAgeGedcom($bdate, new Date(strtoupper(date('d M Y'))))) . ')';
-        } elseif ($bdate->isOK() && $ddate->isOK()) {
-            // If dead, show age at death
-            $age = ' (' . I18N::translate('age') . ' ' . FunctionsDate::getAgeAtEvent(Date::getAgeGedcom($bdate, $ddate)) . ')';
-        } else {
-            $age = '';
         }
 
         // What images are linked to this individual
@@ -134,33 +117,29 @@ class IndividualPage implements RequestHandlerInterface
             }
         }
 
-        $name_records = new Collection();
-        foreach ($individual->facts(['NAME']) as $n => $name_fact) {
-            $name_records->add($this->formatNameRecord($tree, $n, $name_fact));
-        }
+        $name_records = $individual->facts(['NAME'])->map(static function (Fact $fact): string {
+            return view('individual-name', ['fact' => $fact]);
+        });
 
-        $sex_records = new Collection();
-        foreach ($individual->facts(['SEX']) as $n => $sex_fact) {
-            $sex_records->add($this->formatSexRecord($sex_fact));
-        }
+        $sex_records = $individual->facts(['SEX'])->map(static function (Fact $fact): string {
+            return view('individual-sex', ['fact' => $fact]);
+        });
 
         // If this individual is linked to a user account, show the link
         $user_link = '';
         if (Auth::isAdmin()) {
             $users = $this->user_service->findByIndividual($individual);
             foreach ($users as $user) {
-                $user_link = ' —  <a href="' . e(route('admin-users', ['filter' => $user->email()])) . '">' . e($user->userName()) . '</a>';
+                $user_link = ' —  <a href="' . e(route(UserListPage::class, ['filter' => $user->email()])) . '">' . e($user->userName()) . '</a>';
             }
         }
 
         return $this->viewResponse('individual-page', [
-            'age'              => $age,
+            'age'              => $this->ageString($individual),
             'clipboard_facts'  => $this->clipboard_service->pastableFacts($individual, new Collection()),
-            'count_media'      => $this->countFacts($individual, ['OBJE']),
-            'count_names'      => $this->countFacts($individual, ['NAME']),
-            'count_sex'        => $this->countFacts($individual, ['SEX']),
             'individual'       => $individual,
             'individual_media' => $individual_media,
+            'meta_description' => $this->metaDescription($individual),
             'meta_robots'      => 'index,follow',
             'name_records'     => $name_records,
             'sex_records'      => $sex_records,
@@ -174,171 +153,96 @@ class IndividualPage implements RequestHandlerInterface
     }
 
     /**
-     * Count the (non-pending-delete) name records for an individual.
-     *
      * @param Individual $individual
-     * @param string[]   $tags
-     *
-     * @return int
-     */
-    private function countFacts(Individual $individual, array $tags): int
-    {
-        $count = 0;
-
-        foreach ($individual->facts($tags) as $fact) {
-            if (!$fact->isPendingDeletion()) {
-                $count++;
-            }
-        }
-
-        return $count;
-    }
-
-    /**
-     * Format a name record
-     *
-     * @param Tree $tree
-     * @param int  $n
-     * @param Fact $fact
      *
      * @return string
      */
-    private function formatNameRecord(Tree $tree, $n, Fact $fact): string
+    private function ageString(Individual $individual): string
     {
-        $individual = $fact->record();
+        if ($individual->isDead()) {
+            // If dead, show age at death
+            $age = (string) new Age($individual->getBirthDate(), $individual->getDeathDate());
 
-        // Create a dummy record, so we can extract the formatted NAME value from it.
-        $dummy = new Individual(
-            'xref',
-            "0 @xref@ INDI\n1 DEAT Y\n" . $fact->gedcom(),
-            null,
-            $individual->tree()
-        );
-        $dummy->setPrimaryName(0); // Make sure we use the name from "1 NAME"
+            if ($age === '') {
+                return '';
+            }
 
-        $container_class = 'card';
-        $content_class   = 'collapse';
-        $aria            = 'false';
-
-        if ($n === 0) {
-            $content_class = 'collapse show';
-            $aria          = 'true';
-        }
-        if ($fact->isPendingDeletion()) {
-            $container_class .= ' wt-old';
-        } elseif ($fact->isPendingAddition()) {
-            $container_class .= ' wt-new';
-        }
-
-        ob_start();
-        echo '<dl class="row mb-0"><dt class="col-md-4 col-lg-3">', I18N::translate('Name'), '</dt>';
-        echo '<dd class="col-md-8 col-lg-9">', $dummy->fullName(), '</dd>';
-        $ct = preg_match_all('/\n2 (\w+) (.*)/', $fact->gedcom(), $nmatch, PREG_SET_ORDER);
-        for ($i = 0; $i < $ct; $i++) {
-            $tag = $nmatch[$i][1];
-            if ($tag !== 'SOUR' && $tag !== 'NOTE' && $tag !== 'SPFX') {
-                echo '<dt class="col-md-4 col-lg-3">', GedcomTag::getLabel($tag, $individual), '</dt>';
-                echo '<dd class="col-md-8 col-lg-9">'; // Before using dir="auto" on this field, note that Gecko treats this as an inline element but WebKit treats it as a block element
-                if (isset($nmatch[$i][2])) {
-                    $name = e($nmatch[$i][2]);
-                    $name = str_replace('/', '', $name);
-                    $name = preg_replace('/(\S*)\*/', '<span class="starredname">\\1</span>', $name);
-                    switch ($tag) {
-                        case 'TYPE':
-                            echo GedcomCodeName::getValue($name, $individual);
-                            break;
-                        case 'SURN':
-                            // The SURN field is not necessarily the surname.
-                            // Where it is not a substring of the real surname, show it after the real surname.
-                            $surname = e($dummy->getAllNames()[0]['surname']);
-                            $surns   = preg_replace('/, */', ' ', $nmatch[$i][2]);
-                            if (strpos($dummy->getAllNames()[0]['surname'], $surns) !== false) {
-                                echo '<span dir="auto">' . $surname . '</span>';
-                            } else {
-                                echo I18N::translate('%1$s (%2$s)', '<span dir="auto">' . $surname . '</span>', '<span dir="auto">' . $name . '</span>');
-                            }
-                            break;
-                        default:
-                            echo '<span dir="auto">' . $name . '</span>';
-                            break;
-                    }
-                }
-                echo '</dd>';
+            switch ($individual->sex()) {
+                case 'M':
+                    /* I18N: The age of an individual at a given date */
+                    return I18N::translateContext('Male', '(aged %s)', $age);
+                case 'F':
+                    /* I18N: The age of an individual at a given date */
+                    return I18N::translateContext('Female', '(aged %s)', $age);
+                default:
+                    /* I18N: The age of an individual at a given date */
+                    return I18N::translate('(aged %s)', $age);
             }
         }
-        echo '</dl>';
-        if (strpos($fact->gedcom(), "\n2 SOUR") !== false) {
-            echo '<div id="indi_sour" class="clearfix">', FunctionsPrintFacts::printFactSources($tree, $fact->gedcom(), 2), '</div>';
-        }
-        if (strpos($fact->gedcom(), "\n2 NOTE") !== false) {
-            echo '<div id="indi_note" class="clearfix">', FunctionsPrint::printFactNotes($tree, $fact->gedcom(), 2), '</div>';
-        }
-        $content = ob_get_clean();
 
-        if ($fact->canEdit()) {
-            $edit_links =
-                '<a class="btn btn-link" href="#" data-confirm="' . I18N::translate('Are you sure you want to delete this fact?') . '" data-post-url="' . e(route(DeleteFact::class, ['tree' => $individual->tree()->name(), 'xref' => $individual->xref(), 'fact_id' => $fact->id()])) . '" title="' . I18N::translate('Delete this name') . '">' . view('icons/delete') . '<span class="sr-only">' . I18N::translate('Delete this name') . '</span></a>' .
-                '<a class="btn btn-link" href="' . e(route('edit-name', ['xref' => $individual->xref(), 'fact_id' => $fact->id(), 'tree' => $individual->tree()->name()])) . '" title="' . I18N::translate('Edit the name') . '">' . view('icons/edit') . '<span class="sr-only">' . I18N::translate('Edit the name') . '</span></a>';
-        } else {
-            $edit_links = '';
+        // If living, show age today
+        $today = new Date(strtoupper(date('d M Y')));
+        $age   = (string) new Age($individual->getBirthDate(), $today);
+
+        if ($age === '') {
+            return '';
         }
 
-        return '
-			<div class="' . $container_class . '">
-        <div class="card-header" role="tab" id="name-header-' . $n . '">
-		        <a data-toggle="collapse" data-parent="#individual-names" href="#name-content-' . $n . '" aria-expanded="' . $aria . '" aria-controls="name-content-' . $n . '">' . $dummy->fullName() . '</a>
-		      ' . $edit_links . '
-        </div>
-		    <div id="name-content-' . $n . '" class="' . $content_class . '" role="tabpanel" aria-labelledby="name-header-' . $n . '">
-		      <div class="card-body">' . $content . '</div>
-        </div>
-      </div>';
+        /* I18N: The current age of a living individual */
+        return I18N::translate('(age %s)', $age);
     }
 
     /**
-     * print information for a sex record
-     *
-     * @param Fact $fact
+     * @param Individual $individual
      *
      * @return string
      */
-    private function formatSexRecord(Fact $fact): string
+    private function metaDescription(Individual $individual): string
     {
-        $individual = $fact->record();
+        $meta_facts = [];
 
-        switch ($fact->value()) {
-            case 'M':
-                $sex = I18N::translate('Male');
-                break;
-            case 'F':
-                $sex = I18N::translate('Female');
-                break;
-            default:
-                $sex = I18N::translateContext('unknown gender', 'Unknown');
-                break;
+        $birth_date  = $individual->getBirthDate();
+        $birth_place = $individual->getBirthPlace();
+
+        if ($birth_date->isOK() || $birth_place->id() !== 0) {
+            $meta_facts[] = I18N::translate('Birth') . ' ' .
+                $birth_date->display(false, null, false) . ' ' .
+                $birth_place->placeName();
         }
 
-        $container_class = 'card';
-        if ($fact->isPendingDeletion()) {
-            $container_class .= ' wt-old';
-        } elseif ($fact->isPendingAddition()) {
-            $container_class .= ' wt-new';
+        $death_date  = $individual->getDeathDate();
+        $death_place = $individual->getDeathPlace();
+
+        if ($death_date->isOK() || $death_place->id() !== 0) {
+            $meta_facts[] = I18N::translate('Death') . ' ' .
+                $death_date->display(false, null, false) . ' ' .
+                $death_place->placeName();
         }
 
-        if ($individual->canEdit()) {
-            $edit_links = '<a class="btn btn-link" href="' . e(route(EditFact::class, ['xref' => $individual->xref(), 'fact_id' => $fact->id(), 'tree' => $individual->tree()->name()])) . '" title="' . I18N::translate('Edit the gender') . '">' . view('icons/edit') . '<span class="sr-only">' . I18N::translate('Edit the gender') . '</span></a>';
-        } else {
-            $edit_links = '';
+        foreach ($individual->childFamilies() as $family) {
+            $meta_facts[] = I18N::translate('Parents') . ' ' . $family->fullName();
         }
 
-        return '
-		<div class="' . $container_class . '">
-			<div class="card-header" role="tab" id="name-header-add">
-				<div class="card-title mb-0">
-					<b>' . I18N::translate('Gender') . '</b> ' . $sex . $edit_links . '
-				</div>
-			</div>
-		</div>';
+        foreach ($individual->spouseFamilies() as $family) {
+            $spouse = $family->spouse($individual);
+            if ($spouse instanceof Individual) {
+                $meta_facts[] = I18N::translate('Spouse') . ' ' . $spouse->fullName();
+            }
+
+            $child_names = $family->children()->map(static function (Individual $individual): string {
+                return e($individual->getAllNames()[0]['givn']);
+            })->implode(', ');
+
+
+            if ($child_names !== '') {
+                $meta_facts[] = I18N::translate('Children') . ' ' . $child_names;
+            }
+        }
+
+        $meta_facts = array_map('strip_tags', $meta_facts);
+        $meta_facts = array_map('trim', $meta_facts);
+
+        return implode(', ', $meta_facts);
     }
 
     /**

@@ -1,9 +1,8 @@
 <?php
 
-use Fisharebest\Webtrees\GedcomTag;
-
 /**
  * @var string[] $date_options
+ * @var string   $field_label
  * @var string   $field_name
  * @var string   $field_value
  * @var string   $modifier
@@ -14,12 +13,12 @@ use Fisharebest\Webtrees\GedcomTag;
 
 <div class="row form-group">
     <label class="col-sm-3 col-form-label wt-page-options-label" for="fields[<?= e($field_name) ?>]">
-        <?= GedcomTag::getLabel($field_name) ?>
+        <?= $field_label ?>
     </label>
 
     <div class="col-sm-6 wt-page-options-value">
         <input class="form-control form-control" type="text" id="fields[<?= e($field_name) ?>]" name="fields[<?= e($field_name) ?>]" value="<?= e($field_value) ?>" <?php if (substr($field_name, -5) === ':DATE') :
-            ?>onchange="valid_date(this, 'dmy')" <?php
+            ?>onchange="webtrees.reformatDate(this, 'dmy')" <?php
                                                                         endif ?>>
     </div>
 

@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -35,8 +35,8 @@ class SiteTest extends TestCase
      */
     public function testDefault(): void
     {
-        $this->assertSame('foo', Site::getPreference('no-such-setting', 'foo'));
-        $this->assertSame('bar', Site::getPreference('no-such-setting', 'bar'));
+        self::assertSame('foo', Site::getPreference('no-such-setting', 'foo'));
+        self::assertSame('bar', Site::getPreference('no-such-setting', 'bar'));
     }
 
     /**
@@ -48,7 +48,7 @@ class SiteTest extends TestCase
     {
         Site::setPreference('setting', 'foo');
 
-        $this->assertSame('foo', Site::getPreference('setting'));
+        self::assertSame('foo', Site::getPreference('setting'));
     }
 
     /**
@@ -60,9 +60,9 @@ class SiteTest extends TestCase
     {
         $too_long = str_repeat('x', 3000);
         $expected = str_repeat('x', 2000);
-        
+
         Site::setPreference('setting', $too_long);
 
-        $this->assertSame($expected, Site::getPreference('setting'));
+        self::assertSame($expected, Site::getPreference('setting'));
     }
 }

@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -21,7 +21,6 @@ namespace Fisharebest\Webtrees\Module;
 
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\I18N;
-use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Menu;
 use Fisharebest\Webtrees\Services\ModuleService;
 use Fisharebest\Webtrees\Tree;
@@ -96,6 +95,9 @@ class ChartsMenuModule extends AbstractModule implements ModuleMenuInterface
         $submenus   = $this->module_service->findByComponent(ModuleChartInterface::class, $tree, Auth::user())
             ->map(static function (ModuleChartInterface $module) use ($individual): Menu {
                 return $module->chartMenu($individual);
+            })
+            ->sort(static function (Menu $x, Menu $y): int {
+                return $x->getLabel() <=> $y->getLabel();
             });
 
         if ($submenus->isEmpty()) {

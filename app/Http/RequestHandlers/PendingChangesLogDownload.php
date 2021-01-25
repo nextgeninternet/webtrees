@@ -56,7 +56,7 @@ class PendingChangesLogDownload implements RequestHandlerInterface
         $tree = $request->getAttribute('tree');
         assert($tree instanceof Tree);
 
-        $params = $request->getQueryParams();
+        $params         = $request->getQueryParams();
         $params['tree'] = $tree->name();
 
         $content = $this->pending_changes_service->changesQuery($params)
@@ -76,7 +76,7 @@ class PendingChangesLogDownload implements RequestHandlerInterface
             ->implode("\n");
 
         return response($content, StatusCodeInterface::STATUS_OK, [
-            'Content-Type'        => 'text/csv; charset=utf-8',
+            'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="changes.csv"',
         ]);
     }

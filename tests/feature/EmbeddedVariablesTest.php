@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees;
 
+use Fisharebest\Webtrees\Contracts\UserInterface;
 use Fisharebest\Webtrees\Services\ModuleService;
 use Fisharebest\Webtrees\Services\TreeService;
 use Fisharebest\Webtrees\Services\UserService;
@@ -77,15 +78,15 @@ class EmbeddedVariablesTest extends TestCase
 
         // As visitor
         $text = $statistics->embedTags('#getAllTagsTable#');
-        $this->assertNotEquals('#getAllTagsTable#', $text);
+        self::assertNotEquals('#getAllTagsTable#', $text);
 
         // As member
         $user = (new UserService())->create('user', 'User', 'user@example.com', 'secret');
-        $user->setPreference(User::PREF_IS_ADMINISTRATOR, '1');
+        $user->setPreference(UserInterface::PREF_IS_ADMINISTRATOR, '1');
         Auth::login($user);
 
         $text = $statistics->embedTags('#getAllTagsTable#');
-        $this->assertNotEquals('#getAllTagsTable#', $text);
+        self::assertNotEquals('#getAllTagsTable#', $text);
     }
 
     /**
@@ -99,14 +100,14 @@ class EmbeddedVariablesTest extends TestCase
 
         // As visitor
         $text = $statistics->embedTags('#getAllTagsTable#');
-        $this->assertNotEquals('#getAllTagsTable#', $text);
+        self::assertNotEquals('#getAllTagsTable#', $text);
 
         // As member
         $user = (new UserService())->create('user', 'User', 'user@example.com', 'secret');
-        $user->setPreference(User::PREF_IS_ADMINISTRATOR, '1');
+        $user->setPreference(UserInterface::PREF_IS_ADMINISTRATOR, '1');
         Auth::login($user);
 
         $text = $statistics->embedTags('#getAllTagsTable#');
-        $this->assertNotEquals('#getAllTagsTable#', $text);
+        self::assertNotEquals('#getAllTagsTable#', $text);
     }
 }

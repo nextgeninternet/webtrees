@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
 use Fisharebest\Webtrees\Auth;
-use Fisharebest\Webtrees\Individual;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Tree;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -53,16 +53,16 @@ class ReorderNamesAction implements RequestHandlerInterface
         $xref = $request->getAttribute('xref');
         assert(is_string($xref));
 
-        $individual = Individual::getInstance($xref, $tree);
+        $individual = Registry::individualFactory()->make($xref, $tree);
         $individual = Auth::checkIndividualAccess($individual, true);
 
         $params = (array) $request->getParsedBody();
         $order  = $params['order'];
         assert(is_array($order));
 
-        $dummy_facts = ['0 @' . $individual->xref() . '@ INDI'];
-        $sort_facts  = [];
-        $keep_facts  = [];
+        $fake_facts = ['0 @' . $individual->xref() . '@ INDI'];
+        $sort_facts = [];
+        $keep_facts = [];
 
         // Split facts into NAME and other
         foreach ($individual->facts() as $fact) {
@@ -75,11 +75,11 @@ class ReorderNamesAction implements RequestHandlerInterface
 
         // Sort the facts
         uksort($sort_facts, static function (string $x, string $y) use ($order): int {
-            return array_search($x, $order, true) - array_search($y, $order, true);
+            return array_search($x, $order, true) <=> array_search($y, $order, true);
         });
 
         // Merge the facts
-        $gedcom = implode("\n", array_merge($dummy_facts, $sort_facts, $keep_facts));
+        $gedcom = implode("\n", array_merge($fake_facts, $sort_facts, $keep_facts));
 
         $individual->updateRecord($gedcom, false);
 

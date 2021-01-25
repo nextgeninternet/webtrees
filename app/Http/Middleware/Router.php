@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,6 +20,10 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Http\Middleware;
 
 use Aura\Router\RouterContainer;
+use Aura\Router\Rule\Accepts;
+use Aura\Router\Rule\Allows;
+use Fig\Http\Message\StatusCodeInterface;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Services\ModuleService;
 use Fisharebest\Webtrees\Services\TreeService;
 use Fisharebest\Webtrees\Tree;
@@ -31,6 +35,8 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 use function app;
 use function array_map;
+use function response;
+use function str_contains;
 
 /**
  * Simple class to help migrate to a third-party routing library.
@@ -79,18 +85,35 @@ class Router implements MiddlewareInterface
         }
 
         // Match the request to a route.
-        $route = $this->router_container->getMatcher()->match($pretty);
+        $matcher = $this->router_container->getMatcher();
+        $route   = $matcher->match($pretty);
 
         // No route matched?
         if ($route === false) {
-            // Bind the request into the container
-            app()->instance(ServerRequestInterface::class, $request);
+            $failed_route = $matcher->getFailedRoute();
 
-            return $handler->handle($request);
+            switch ($failed_route->failedRule) {
+                case Allows::class:
+                    return response('', StatusCodeInterface::STATUS_METHOD_NOT_ALLOWED, [
+                        'Allow' => implode(', ', $failed_route->allows),
+                    ]);
+
+                case Accepts::class:
+                    // We don't use this, but modules might.
+                    return response('Negotiation failed', StatusCodeInterface::STATUS_NOT_ACCEPTABLE);
+
+                default:
+                    // Not found
+                    return $handler->handle($request);
+            }
         }
 
         // Add the route as attribute of the request
-        $request = $request->withAttribute('route', $route->name);
+        $request = $request->withAttribute('route', $route);
+
+        // This middleware cannot run until after the routing, as it needs to know the route.
+        $post_routing_middleware = [CheckCsrf::class];
+        $post_routing_middleware = array_map('app', $post_routing_middleware);
 
         // Firstly, apply the route middleware
         $route_middleware = $route->extras['middleware'] ?? [];
@@ -102,21 +125,43 @@ class Router implements MiddlewareInterface
         // Finally, run the handler using middleware
         $handler_middleware = [new WrapHandler($route->handler)];
 
-        $middleware = array_merge($route_middleware, $module_middleware, $handler_middleware);
+        $middleware = array_merge(
+            $post_routing_middleware,
+            $route_middleware,
+            $module_middleware,
+            $handler_middleware
+        );
 
         // Add the matched attributes to the request.
         foreach ($route->attributes as $key => $value) {
             if ($key === 'tree') {
                 $value = $this->tree_service->all()->get($value);
                 app()->instance(Tree::class, $value);
+
+                // Missing mandatory parameter? Let the default handler take care of it.
+                if ($value === null && str_contains($route->path, '{tree}')) {
+                    return $handler->handle($request);
+                }
             }
-            $request = $request->withAttribute($key, $value);
+
+            $request = $request->withAttribute((string) $key, $value);
         }
 
         // Bind the request into the container
         app()->instance(ServerRequestInterface::class, $request);
 
         $dispatcher = new Dispatcher($middleware, app());
+
+        // These are deprecated, and will be removed in webtrees 2.1.0
+        app()->instance('cache.array', Registry::cache()->array());
+        app()->instance('cache.files', Registry::cache()->file());
+
+        // These are deprecated, and will be removed in webtrees 2.1.0
+        $request = $request
+            ->withAttribute('filesystem.data', Registry::filesystem()->data())
+            ->withAttribute('filesystem.data.name', Registry::filesystem()->dataName())
+            ->withAttribute('filesystem.root', Registry::filesystem()->root())
+            ->withAttribute('filesystem.root.name', Registry::filesystem()->rootName());
 
         return $dispatcher->dispatch($request);
     }

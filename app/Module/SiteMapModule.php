@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,9 +19,13 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Module;
 
+use Aura\Router\Route;
+use Aura\Router\RouterContainer;
 use Fig\Http\Message\StatusCodeInterface;
-use Fisharebest\Webtrees\Carbon;
+use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Exceptions\HttpNotFoundException;
+use Fisharebest\Webtrees\Registry;
+use Fisharebest\Webtrees\Family;
 use Fisharebest\Webtrees\FlashMessages;
 use Fisharebest\Webtrees\GedcomRecord;
 use Fisharebest\Webtrees\Html;
@@ -32,25 +36,42 @@ use Fisharebest\Webtrees\Note;
 use Fisharebest\Webtrees\Repository;
 use Fisharebest\Webtrees\Services\TreeService;
 use Fisharebest\Webtrees\Source;
+use Fisharebest\Webtrees\Submitter;
 use Fisharebest\Webtrees\Tree;
 use Illuminate\Database\Capsule\Manager as DB;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
+use function app;
+use function assert;
+use function date;
 use function redirect;
+use function response;
+use function route;
 use function view;
 
 /**
  * Class SiteMapModule
  */
-class SiteMapModule extends AbstractModule implements ModuleConfigInterface
+class SiteMapModule extends AbstractModule implements ModuleConfigInterface, RequestHandlerInterface
 {
     use ModuleConfigTrait;
 
     private const RECORDS_PER_VOLUME = 500; // Keep sitemap files small, for memory, CPU and max_allowed_packet limits.
-    private const CACHE_LIFE         = 1209600; // Two weeks
+    private const CACHE_LIFE         = 209600; // Two weeks
+
+    private const PRIORITY = [
+        Family::RECORD_TYPE     => 0.7,
+        Individual::RECORD_TYPE => 0.9,
+        Media::RECORD_TYPE      => 0.5,
+        Note::RECORD_TYPE       => 0.3,
+        Repository::RECORD_TYPE => 0.5,
+        Source::RECORD_TYPE     => 0.5,
+        Submitter::RECORD_TYPE  => 0.3,
+    ];
 
     /** @var TreeService */
     private $tree_service;
@@ -63,6 +84,26 @@ class SiteMapModule extends AbstractModule implements ModuleConfigInterface
     public function __construct(TreeService $tree_service)
     {
         $this->tree_service = $tree_service;
+    }
+
+    /**
+     * Initialization.
+     *
+     * @return void
+     */
+    public function boot(): void
+    {
+        $router_container = app(RouterContainer::class);
+        assert($router_container instanceof RouterContainer);
+
+        $router_container->getMap()
+            ->get('sitemap-style', '/sitemap.xsl', $this);
+
+        $router_container->getMap()
+            ->get('sitemap-index', '/sitemap.xml', $this);
+
+        $router_container->getMap()
+            ->get('sitemap-file', '/sitemap-{tree}-{type}-{page}.xml', $this);
     }
 
     /**
@@ -95,12 +136,9 @@ class SiteMapModule extends AbstractModule implements ModuleConfigInterface
     {
         $this->layout = 'layouts/administration';
 
-        $sitemap_url = route('module', [
-            'module' => $this->name(),
-            'action' => 'Index',
-        ]);
+        $sitemap_url = route('sitemap-index');
 
-        // This list comes from http://en.wikipedia.org/wiki/Sitemaps
+        // This list comes from https://en.wikipedia.org/wiki/Sitemaps
         $submit_urls = [
             'Bing/Yahoo' => Html::url('https://www.bing.com/webmaster/ping.aspx', ['siteMap' => $sitemap_url]),
             'Google'     => Html::url('https://www.google.com/webmasters/tools/ping', ['sitemap' => $sitemap_url]),
@@ -149,53 +187,112 @@ class SiteMapModule extends AbstractModule implements ModuleConfigInterface
      *
      * @return ResponseInterface
      */
-    public function getIndexAction(ServerRequestInterface $request): ResponseInterface
+    public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $timestamp = (int) $this->getPreference('sitemap.timestamp');
+        $route = $request->getAttribute('route');
+        assert($route instanceof Route);
 
-        if ($timestamp > Carbon::now()->subSeconds(self::CACHE_LIFE)->unix()) {
-            $content = $this->getPreference('sitemap.xml');
-        } else {
+        if ($route->name === 'sitemap-style') {
+            $content = view('modules/sitemap/sitemap-xsl');
+
+            return response($content, StatusCodeInterface::STATUS_OK, [
+                'Content-Type' => 'application/xml',
+            ]);
+        }
+
+        if ($route->name === 'sitemap-index') {
+            return $this->siteMapIndex($request);
+        }
+
+        return $this->siteMapFile($request);
+    }
+
+    /**
+     * @param ServerRequestInterface $request
+     *
+     * @return ResponseInterface
+     */
+    private function siteMapIndex(ServerRequestInterface $request): ResponseInterface
+    {
+        $content = Registry::cache()->file()->remember('sitemap.xml', function (): string {
+            // Which trees have sitemaps enabled?
+            $tree_ids = $this->tree_service->all()->filter(static function (Tree $tree): bool {
+                return $tree->getPreference('include_in_sitemap') === '1';
+            })->map(static function (Tree $tree): int {
+                return $tree->id();
+            });
+
+            $count_families = DB::table('families')
+                ->join('gedcom', 'f_file', '=', 'gedcom_id')
+                ->whereIn('gedcom_id', $tree_ids)
+                ->groupBy(['gedcom_id'])
+                ->select([new Expression('COUNT(*) AS total'), 'gedcom_name'])
+                ->pluck('total', 'gedcom_name');
+
             $count_individuals = DB::table('individuals')
-                ->groupBy(['i_file'])
-                ->select([new Expression('COUNT(*) AS total'), 'i_file'])
-                ->pluck('total', 'i_file');
+                ->join('gedcom', 'i_file', '=', 'gedcom_id')
+                ->whereIn('gedcom_id', $tree_ids)
+                ->groupBy(['gedcom_id'])
+                ->select([new Expression('COUNT(*) AS total'), 'gedcom_name'])
+                ->pluck('total', 'gedcom_name');
 
             $count_media = DB::table('media')
-                ->groupBy(['m_file'])
-                ->select([new Expression('COUNT(*) AS total'), 'm_file'])
-                ->pluck('total', 'm_file');
+                ->join('gedcom', 'm_file', '=', 'gedcom_id')
+                ->whereIn('gedcom_id', $tree_ids)
+                ->groupBy(['gedcom_id'])
+                ->select([new Expression('COUNT(*) AS total'), 'gedcom_name'])
+                ->pluck('total', 'gedcom_name');
 
             $count_notes = DB::table('other')
-                ->where('o_type', '=', 'NOTE')
-                ->groupBy(['o_file'])
-                ->select([new Expression('COUNT(*) AS total'), 'o_file'])
-                ->pluck('total', 'o_file');
+                ->join('gedcom', 'o_file', '=', 'gedcom_id')
+                ->whereIn('gedcom_id', $tree_ids)
+                ->where('o_type', '=', Note::RECORD_TYPE)
+                ->groupBy(['gedcom_id'])
+                ->select([new Expression('COUNT(*) AS total'), 'gedcom_name'])
+                ->pluck('total', 'gedcom_name');
 
             $count_repositories = DB::table('other')
-                ->where('o_type', '=', 'REPO')
-                ->groupBy(['o_file'])
-                ->select([new Expression('COUNT(*) AS total'), 'o_file'])
-                ->pluck('total', 'o_file');
+                ->join('gedcom', 'o_file', '=', 'gedcom_id')
+                ->whereIn('gedcom_id', $tree_ids)
+                ->where('o_type', '=', Repository::RECORD_TYPE)
+                ->groupBy(['gedcom_id'])
+                ->select([new Expression('COUNT(*) AS total'), 'gedcom_name'])
+                ->pluck('total', 'gedcom_name');
 
             $count_sources = DB::table('sources')
-                ->groupBy(['s_file'])
-                ->select([new Expression('COUNT(*) AS total'), 's_file'])
-                ->pluck('total', 's_file');
+                ->join('gedcom', 's_file', '=', 'gedcom_id')
+                ->whereIn('gedcom_id', $tree_ids)
+                ->groupBy(['gedcom_id'])
+                ->select([new Expression('COUNT(*) AS total'), 'gedcom_name'])
+                ->pluck('total', 'gedcom_name');
 
-            $content = view('modules/sitemap/sitemap-index.xml', [
+            $count_submitters = DB::table('other')
+                ->join('gedcom', 'o_file', '=', 'gedcom_id')
+                ->whereIn('gedcom_id', $tree_ids)
+                ->where('o_type', '=', Submitter::RECORD_TYPE)
+                ->groupBy(['gedcom_id'])
+                ->select([new Expression('COUNT(*) AS total'), 'gedcom_name'])
+                ->pluck('total', 'gedcom_name');
+
+            // Versions 2.0.1 and earlier of this module stored large amounts of data in the settings.
+            DB::table('module_setting')
+                ->where('module_name', '=', $this->name())
+                ->delete();
+
+            return view('modules/sitemap/sitemap-index-xml', [
                 'all_trees'          => $this->tree_service->all(),
+                'count_families'     => $count_families,
                 'count_individuals'  => $count_individuals,
                 'count_media'        => $count_media,
                 'count_notes'        => $count_notes,
                 'count_repositories' => $count_repositories,
                 'count_sources'      => $count_sources,
+                'count_submitters'   => $count_submitters,
                 'last_mod'           => date('Y-m-d'),
                 'records_per_volume' => self::RECORDS_PER_VOLUME,
+                'sitemap_xsl'        => route('sitemap-style'),
             ]);
-
-            $this->setPreference('sitemap.xml', $content);
-        }
+        }, self::CACHE_LIFE);
 
         return response($content, StatusCodeInterface::STATUS_OK, [
             'Content-Type' => 'application/xml',
@@ -207,28 +304,30 @@ class SiteMapModule extends AbstractModule implements ModuleConfigInterface
      *
      * @return ResponseInterface
      */
-    public function getFileAction(ServerRequestInterface $request): ResponseInterface
+    private function siteMapFile(ServerRequestInterface $request): ResponseInterface
     {
-        $file = $request->getQueryParams()['file'];
+        $tree = $request->getAttribute('tree');
+        assert($tree instanceof Tree);
 
-        if (!preg_match('/^(\d+)-([imnrs])-(\d+)$/', $file, $match)) {
-            throw new HttpNotFoundException('Bad sitemap file');
+        $type = $request->getAttribute('type');
+        $page = (int) $request->getAttribute('page');
+
+        if ($tree->getPreference('include_in_sitemap') !== '1') {
+            throw new HttpNotFoundException();
         }
 
-        $timestamp   = (int) $this->getPreference('sitemap-' . $file . '.timestamp');
-        $expiry_time = Carbon::now()->subSeconds(self::CACHE_LIFE)->unix();
+        $cache_key = 'sitemap/' . $tree->id() . '/' . $type . '/' . $page . '.xml';
 
-        if ($timestamp > $expiry_time) {
-            $content = $this->getPreference('sitemap-' . $file . '.xml');
-        } else {
-            $tree = $this->tree_service->find((int) $match[1]);
+        $content = Registry::cache()->file()->remember($cache_key, function () use ($tree, $type, $page): string {
+            $records = $this->sitemapRecords($tree, $type, self::RECORDS_PER_VOLUME, self::RECORDS_PER_VOLUME * $page);
 
-            $records = $this->sitemapRecords($tree, $match[2], self::RECORDS_PER_VOLUME, self::RECORDS_PER_VOLUME * $match[3]);
-
-            $content = view('modules/sitemap/sitemap-file.xml', ['records' => $records]);
-
-            $this->setPreference('sitemap.xml', $content);
-        }
+            return view('modules/sitemap/sitemap-file-xml', [
+                'priority'    => self::PRIORITY[$type],
+                'records'     => $records,
+                'sitemap_xsl' => route('sitemap-style'),
+                'tree'        => $tree,
+            ]);
+        }, self::CACHE_LIFE);
 
         return response($content, StatusCodeInterface::STATUS_OK, [
             'Content-Type' => 'application/xml',
@@ -246,24 +345,32 @@ class SiteMapModule extends AbstractModule implements ModuleConfigInterface
     private function sitemapRecords(Tree $tree, string $type, int $limit, int $offset): Collection
     {
         switch ($type) {
-            case 'i':
+            case Family::RECORD_TYPE:
+                $records = $this->sitemapFamilies($tree, $limit, $offset);
+                break;
+
+            case Individual::RECORD_TYPE:
                 $records = $this->sitemapIndividuals($tree, $limit, $offset);
                 break;
 
-            case 'm':
+            case Media::RECORD_TYPE:
                 $records = $this->sitemapMedia($tree, $limit, $offset);
                 break;
 
-            case 'n':
+            case Note::RECORD_TYPE:
                 $records = $this->sitemapNotes($tree, $limit, $offset);
                 break;
 
-            case 'r':
+            case Repository::RECORD_TYPE:
                 $records = $this->sitemapRepositories($tree, $limit, $offset);
                 break;
 
-            case 's':
+            case Source::RECORD_TYPE:
                 $records = $this->sitemapSources($tree, $limit, $offset);
+                break;
+
+            case Submitter::RECORD_TYPE:
+                $records = $this->sitemapSubmitters($tree, $limit, $offset);
                 break;
 
             default:
@@ -271,9 +378,29 @@ class SiteMapModule extends AbstractModule implements ModuleConfigInterface
         }
 
         // Skip private records.
-        $records = $records->filter(GedcomRecord::accessFilter());
+        $records = $records->filter(static function (GedcomRecord $record): bool {
+            return $record->canShow(Auth::PRIV_PRIVATE);
+        });
 
         return $records;
+    }
+
+    /**
+     * @param Tree $tree
+     * @param int  $limit
+     * @param int  $offset
+     *
+     * @return Collection<Family>
+     */
+    private function sitemapFamilies(Tree $tree, int $limit, int $offset): Collection
+    {
+        return DB::table('families')
+            ->where('f_file', '=', $tree->id())
+            ->orderBy('f_id')
+            ->skip($offset)
+            ->take($limit)
+            ->get()
+            ->map(Registry::familyFactory()->mapper($tree));
     }
 
     /**
@@ -291,7 +418,7 @@ class SiteMapModule extends AbstractModule implements ModuleConfigInterface
             ->skip($offset)
             ->take($limit)
             ->get()
-            ->map(Individual::rowMapper($tree));
+            ->map(Registry::individualFactory()->mapper($tree));
     }
 
     /**
@@ -309,7 +436,7 @@ class SiteMapModule extends AbstractModule implements ModuleConfigInterface
             ->skip($offset)
             ->take($limit)
             ->get()
-            ->map(Media::rowMapper($tree));
+            ->map(Registry::mediaFactory()->mapper($tree));
     }
 
     /**
@@ -323,12 +450,12 @@ class SiteMapModule extends AbstractModule implements ModuleConfigInterface
     {
         return DB::table('other')
             ->where('o_file', '=', $tree->id())
-            ->where('o_type', '=', 'NOTE')
+            ->where('o_type', '=', Note::RECORD_TYPE)
             ->orderBy('o_id')
             ->skip($offset)
             ->take($limit)
             ->get()
-            ->map(Note::rowMapper($tree));
+            ->map(Registry::noteFactory()->mapper($tree));
     }
 
     /**
@@ -342,12 +469,12 @@ class SiteMapModule extends AbstractModule implements ModuleConfigInterface
     {
         return DB::table('other')
             ->where('o_file', '=', $tree->id())
-            ->where('o_type', '=', 'REPO')
+            ->where('o_type', '=', Repository::RECORD_TYPE)
             ->orderBy('o_id')
             ->skip($offset)
             ->take($limit)
             ->get()
-            ->map(Repository::rowMapper($tree));
+            ->map(Registry::repositoryFactory()->mapper($tree));
     }
 
     /**
@@ -365,6 +492,25 @@ class SiteMapModule extends AbstractModule implements ModuleConfigInterface
             ->skip($offset)
             ->take($limit)
             ->get()
-            ->map(Source::rowMapper($tree));
+            ->map(Registry::sourceFactory()->mapper($tree));
+    }
+
+    /**
+     * @param Tree $tree
+     * @param int  $limit
+     * @param int  $offset
+     *
+     * @return Collection<Submitter>
+     */
+    private function sitemapSubmitters(Tree $tree, int $limit, int $offset): Collection
+    {
+        return DB::table('other')
+            ->where('o_file', '=', $tree->id())
+            ->where('o_type', '=', Submitter::RECORD_TYPE)
+            ->orderBy('o_id')
+            ->skip($offset)
+            ->take($limit)
+            ->get()
+            ->map(Registry::submitterFactory()->mapper($tree));
     }
 }

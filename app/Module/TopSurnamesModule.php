@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -22,6 +22,7 @@ namespace Fisharebest\Webtrees\Module;
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Functions\FunctionsPrintLists;
 use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Tree;
 use Fisharebest\Webtrees\Services\ModuleService;
 use Illuminate\Database\Capsule\Manager as DB;
@@ -96,7 +97,7 @@ class TopSurnamesModule extends AbstractModule implements ModuleBlockInterface
         $top_surnames = DB::table('name')
             ->where('n_file', '=', $tree->id())
             ->where('n_type', '<>', '_MARNM')
-            ->whereNotIn('n_surn', ['@N.N.', ''])
+            ->whereNotIn('n_surn', [Individual::NOMEN_NESCIO, ''])
             ->groupBy(['n_surn'])
             ->orderByDesc(new Expression('COUNT(n_surn)'))
             ->take($num)
@@ -111,18 +112,25 @@ class TopSurnamesModule extends AbstractModule implements ModuleBlockInterface
                 ->groupBy(['surname'])
                 ->select([new Expression('n_surname /*! COLLATE utf8_bin */ AS surname'), new Expression('count(*) AS total')])
                 ->pluck('total', 'surname')
+                ->map(static function ($n): int {
+                    // Some database drivers return numeric columns strings.
+                    return (int) $n;
+                })
                 ->all();
 
             $all_surnames[$top_surname] = $variants;
         }
-        
+
         // Find a module providing individual lists.
         $module = $this->module_service
             ->findByComponent(ModuleListInterface::class, $tree, Auth::user())
             ->first(static function (ModuleInterface $module): bool {
-                return $module instanceof IndividualListModule;
+                // The family list extends the individual list
+                return
+                    $module instanceof IndividualListModule &&
+                    !$module instanceof FamilyListModule;
             });
-        
+
         switch ($infoStyle) {
             case 'tagcloud':
                 uksort($all_surnames, [I18N::class, 'strcasecmp']);

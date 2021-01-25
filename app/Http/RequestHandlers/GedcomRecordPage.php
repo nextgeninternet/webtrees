@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -21,14 +21,15 @@ namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Family;
-use Fisharebest\Webtrees\Gedcom;
-use Fisharebest\Webtrees\GedcomRecord;
+use Fisharebest\Webtrees\Header;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Media;
 use Fisharebest\Webtrees\Note;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Repository;
 use Fisharebest\Webtrees\Source;
+use Fisharebest\Webtrees\Submission;
 use Fisharebest\Webtrees\Submitter;
 use Fisharebest\Webtrees\Tree;
 use Psr\Http\Message\ResponseInterface;
@@ -49,11 +50,13 @@ class GedcomRecordPage implements RequestHandlerInterface
     // These standard genealogy record types have their own pages.
     private const STANDARD_RECORDS = [
         Family::class,
+        Header::class,
         Individual::class,
         Media::class,
         Note::class,
         Repository::class,
         Source::class,
+        Submission::class,
         Submitter::class,
     ];
 
@@ -72,7 +75,7 @@ class GedcomRecordPage implements RequestHandlerInterface
         $xref = $request->getAttribute('xref');
         assert(is_string($xref));
 
-        $record = GedcomRecord::getInstance($xref, $tree);
+        $record = Registry::gedcomRecordFactory()->make($xref, $tree);
         $record = Auth::checkRecordAccess($record);
 
         // Standard genealogy records have their own pages.
@@ -80,13 +83,7 @@ class GedcomRecordPage implements RequestHandlerInterface
             return redirect($record->url());
         }
 
-        if (preg_match('/^0 @' . Gedcom::REGEX_XREF . '@ ([_A-Z0-9]+)/', $record->gedcom(), $match)) {
-            $record_type = $match[1];
-        } elseif (preg_match('/^0 ([_A-Z0-9]+)/', $record->gedcom(), $match)) {
-            $record_type = $match[1];
-        } else {
-            $record_type = $record::RECORD_TYPE;
-        }
+        $record_type = $record->tag();
 
         return $this->viewResponse('gedcom-record-page', [
             'facts'         => $record->facts(),
@@ -95,7 +92,6 @@ class GedcomRecordPage implements RequestHandlerInterface
             'notes'         => $record->linkedNotes($record_type),
             'media_objects' => $record->linkedMedia($record_type),
             'record'        => $record,
-            'record_type'   => $record_type,
             'sources'       => $record->linkedSources($record_type),
             'title'         => $record->fullName(),
             'tree'          => $tree,

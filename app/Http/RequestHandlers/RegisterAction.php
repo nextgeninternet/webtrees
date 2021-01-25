@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2021 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,9 +20,10 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Http\RequestHandlers;
 
 use Exception;
+use Fisharebest\Webtrees\Contracts\UserInterface;
 use Fisharebest\Webtrees\Exceptions\HttpNotFoundException;
 use Fisharebest\Webtrees\FlashMessages;
-use Fisharebest\Webtrees\Http\Controllers\AbstractBaseController;
+use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Log;
 use Fisharebest\Webtrees\NoReplyUser;
@@ -33,19 +34,21 @@ use Fisharebest\Webtrees\Site;
 use Fisharebest\Webtrees\SiteUser;
 use Fisharebest\Webtrees\Tree;
 use Fisharebest\Webtrees\TreeUser;
-use Fisharebest\Webtrees\User;
 use Illuminate\Database\Capsule\Manager as DB;
 use Illuminate\Support\Str;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 use function view;
 
 /**
  * Process a user registration.
  */
-class RegisterAction extends AbstractBaseController
+class RegisterAction implements RequestHandlerInterface
 {
+    use ViewResponseTrait;
+
     /** @var CaptchaService */
     private $captcha_service;
 
@@ -87,23 +90,23 @@ class RegisterAction extends AbstractBaseController
 
         $params = (array) $request->getParsedBody();
 
-        $comments  = $params['comments'] ?? '';
-        $email     = $params['email'] ?? '';
-        $password  = $params['password'] ?? '';
-        $realname  = $params['realname'] ?? '';
-        $username  = $params['username'] ?? '';
+        $comment  = $params['comment'] ?? '';
+        $email    = $params['email'] ?? '';
+        $password = $params['password'] ?? '';
+        $realname = $params['realname'] ?? '';
+        $username = $params['username'] ?? '';
 
         try {
             if ($this->captcha_service->isRobot($request)) {
                 throw new Exception(I18N::translate('Please try again.'));
             }
 
-            $this->doValidateRegistration($request, $username, $email, $realname, $comments, $password);
+            $this->doValidateRegistration($request, $username, $email, $realname, $comment, $password);
         } catch (Exception $ex) {
             FlashMessages::addMessage($ex->getMessage(), 'danger');
 
             return redirect(route(RegisterPage::class, [
-                'comments' => $comments,
+                'comment'  => $comment,
                 'email'    => $email,
                 'realname' => $realname,
                 'username' => $username,
@@ -115,26 +118,26 @@ class RegisterAction extends AbstractBaseController
         $user  = $this->user_service->create($username, $realname, $email, $password);
         $token = Str::random(32);
 
-        $user->setPreference(User::PREF_LANGUAGE, I18N::languageTag());
-        $user->setPreference(User::PREF_TIME_ZONE, Site::getPreference('TIMEZONE', 'UTC'));
-        $user->setPreference(User::PREF_IS_EMAIL_VERIFIED, '');
-        $user->setPreference(User::PREF_IS_ACCOUNT_APPROVED, '');
-        $user->setPreference(User::PREF_TIMESTAMP_REGISTERED, date('U'));
-        $user->setPreference(User::PREF_VERIFICATION_TOKEN, $token);
-        $user->setPreference(User::PREF_CONTACT_METHOD, 'messaging2');
-        $user->setPreference(User::PREF_NEW_ACCOUNT_COMMENT, $comments);
-        $user->setPreference(User::PREF_IS_VISIBLE_ONLINE, '1');
-        $user->setPreference(User::PREF_AUTO_ACCEPT_EDITS, '');
-        $user->setPreference(User::PREF_IS_ADMINISTRATOR, '');
-        $user->setPreference(User::PREF_TIMESTAMP_ACTIVE, '0');
+        $user->setPreference(UserInterface::PREF_LANGUAGE, I18N::languageTag());
+        $user->setPreference(UserInterface::PREF_TIME_ZONE, Site::getPreference('TIMEZONE', 'UTC'));
+        $user->setPreference(UserInterface::PREF_IS_EMAIL_VERIFIED, '');
+        $user->setPreference(UserInterface::PREF_IS_ACCOUNT_APPROVED, '');
+        $user->setPreference(UserInterface::PREF_TIMESTAMP_REGISTERED, date('U'));
+        $user->setPreference(UserInterface::PREF_VERIFICATION_TOKEN, $token);
+        $user->setPreference(UserInterface::PREF_CONTACT_METHOD, 'messaging2');
+        $user->setPreference(UserInterface::PREF_NEW_ACCOUNT_COMMENT, $comment);
+        $user->setPreference(UserInterface::PREF_IS_VISIBLE_ONLINE, '1');
+        $user->setPreference(UserInterface::PREF_AUTO_ACCEPT_EDITS, '');
+        $user->setPreference(UserInterface::PREF_IS_ADMINISTRATOR, '');
+        $user->setPreference(UserInterface::PREF_TIMESTAMP_ACTIVE, '0');
 
         $base_url = $request->getAttribute('base_url');
         $reply_to = $tree instanceof Tree ? new TreeUser($tree) : new SiteUser();
 
         $verify_url = route(VerifyEmail::class, [
             'username' => $user->userName(),
-            'token' => $token,
-            'tree' => $tree instanceof Tree ? $tree->name() : null,
+            'token'    => $token,
+            'tree'     => $tree instanceof Tree ? $tree->name() : null,
         ]);
 
         // Send a verification message to the user.
@@ -150,21 +153,21 @@ class RegisterAction extends AbstractBaseController
 
         // Tell the administrators about the registration.
         foreach ($this->user_service->administrators() as $administrator) {
-            I18N::init($administrator->getPreference(User::PREF_LANGUAGE));
+            I18N::init($administrator->getPreference(UserInterface::PREF_LANGUAGE));
 
             /* I18N: %s is a server name/URL */
             $subject = I18N::translate('New registration at %s', $base_url);
 
             $body_text = view('emails/register-notify-text', [
                 'user'     => $user,
-                'comments' => $comments,
+                'comments' => $comment,
                 'base_url' => $base_url,
                 'tree'     => $tree,
             ]);
 
             $body_html = view('emails/register-notify-html', [
                 'user'     => $user,
-                'comments' => $comments,
+                'comments' => $comment,
                 'base_url' => $base_url,
                 'tree'     => $tree,
             ]);
@@ -180,7 +183,7 @@ class RegisterAction extends AbstractBaseController
                 $body_html
             );
 
-            $mail1_method = $administrator->getPreference(User::PREF_CONTACT_METHOD);
+            $mail1_method = $administrator->getPreference(UserInterface::PREF_CONTACT_METHOD);
             if ($mail1_method !== 'messaging3' && $mail1_method !== 'mailto' && $mail1_method !== 'none') {
                 DB::table('message')->insert([
                     'sender'     => $user->email(),

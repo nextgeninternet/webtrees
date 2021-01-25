@@ -52,12 +52,6 @@ class StatisticsChartModule extends AbstractModule implements ModuleChartInterfa
 {
     use ModuleChartTrait;
 
-    // We generate a bitmap chart with these dimensions in image pixels.
-    // These set the aspect ratio.  The actual image is sized using CSS
-    // The maximum size (width x height) is 300,000
-    private const CHART_WIDTH  = 950;
-    private const CHART_HEIGHT = 315;
-
     public const X_AXIS_INDIVIDUAL_MAP        = 1;
     public const X_AXIS_BIRTH_MAP             = 2;
     public const X_AXIS_DEATH_MAP             = 3;
@@ -147,7 +141,7 @@ class StatisticsChartModule extends AbstractModule implements ModuleChartInterfa
 
         $user = $request->getAttribute('user');
 
-        Auth::checkComponentAccess($this, 'chart', $tree, $user);
+        Auth::checkComponentAccess($this, ModuleChartInterface::class, $tree, $user);
 
         $tabs = [
             I18N::translate('Individuals') => route('module', [
@@ -249,6 +243,7 @@ class StatisticsChartModule extends AbstractModule implements ModuleChartInterfa
     public function postCustomChartAction(ServerRequestInterface $request): ResponseInterface
     {
         $statistics = app(Statistics::class);
+        assert($statistics instanceof Statistics);
 
         $params = (array) $request->getParsedBody();
 
@@ -493,13 +488,12 @@ class StatisticsChartModule extends AbstractModule implements ModuleChartInterfa
                         $z_axis = $this->axisAll();
                         $rows   = $statistics->statsFirstMarriageQuery()->get();
                         $indi   = [];
-                        $fam    = [];
                         foreach ($rows as $row) {
-                            if (!in_array($row->indi, $indi, true) && !in_array($row->fams, $fam, true)) {
+                            if (!in_array($row->f_husb, $indi, true) && !in_array($row->f_wife, $indi, true)) {
                                 $this->fillYData($row->month, 0, 1, $x_axis, $z_axis, $ydata);
                             }
-                            $indi[] = $row->indi;
-                            $fam[]  = $row->fams;
+                            $indi[]  = $row->f_husb;
+                            $indi[]  = $row->f_wife;
                         }
                         break;
                     case self::Z_AXIS_TIME:
@@ -507,15 +501,14 @@ class StatisticsChartModule extends AbstractModule implements ModuleChartInterfa
                         $z_axis         = $this->axisYears($boundaries_csv);
                         $prev_boundary  = 0;
                         $indi           = [];
-                        $fam            = [];
                         foreach (array_keys($z_axis) as $boundary) {
                             $rows = $statistics->statsFirstMarriageQuery($prev_boundary, $boundary)->get();
                             foreach ($rows as $row) {
-                                if (!in_array($row->indi, $indi, true) && !in_array($row->fams, $fam, true)) {
+                                if (!in_array($row->f_husb, $indi, true) && !in_array($row->f_wife, $indi, true)) {
                                     $this->fillYData($row->month, $boundary, 1, $x_axis, $z_axis, $ydata);
                                 }
-                                $indi[] = $row->indi;
-                                $fam[]  = $row->fams;
+                                $indi[]  = $row->f_husb;
+                                $indi[]  = $row->f_wife;
                             }
                             $prev_boundary = $boundary + 1;
                         }
@@ -846,7 +839,7 @@ class StatisticsChartModule extends AbstractModule implements ModuleChartInterfa
      *
      * @param string $boundaries_csv
      *
-     * @return array
+     * @return array<string>
      */
     private function axisNumbers(string $boundaries_csv): array
     {
@@ -912,7 +905,7 @@ class StatisticsChartModule extends AbstractModule implements ModuleChartInterfa
     /**
      * Find the axis entry for a given value.
      * Some are direct lookup (e.g. M/F, JAN/FEB/MAR).
-     * Others need to find the approprate range.
+     * Others need to find the appropriate range.
      *
      * @param int|float|string $value
      * @param string[]         $axis

@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,12 +20,10 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees;
 
 use Closure;
-use Exception;
 use Fisharebest\Webtrees\Functions\FunctionsPrintFacts;
 use Fisharebest\Webtrees\Http\RequestHandlers\MediaPage;
 use Illuminate\Database\Capsule\Manager as DB;
 use Illuminate\Support\Collection;
-use stdClass;
 
 /**
  * A GEDCOM media (OBJE) object.
@@ -39,18 +37,15 @@ class Media extends GedcomRecord
     /**
      * A closure which will create a record from a database row.
      *
+     * @deprecated since 2.0.4.  Will be removed in 2.1.0 - Use Factory::media()
+     *
      * @param Tree $tree
      *
      * @return Closure
      */
     public static function rowMapper(Tree $tree): Closure
     {
-        return static function (stdClass $row) use ($tree): Media {
-            $media = Media::getInstance($row->m_id, $tree, $row->m_gedcom);
-            assert($media instanceof Media);
-
-            return $media;
-        };
+        return Registry::mediaFactory()->mapper($tree);
     }
 
     /**
@@ -58,23 +53,17 @@ class Media extends GedcomRecord
      * we just receive the XREF. For bulk records (such as lists
      * and search results) we can receive the GEDCOM data as well.
      *
+     * @deprecated since 2.0.4.  Will be removed in 2.1.0 - Use Factory::media()
+     *
      * @param string      $xref
      * @param Tree        $tree
      * @param string|null $gedcom
-     *
-     * @throws Exception
      *
      * @return Media|null
      */
     public static function getInstance(string $xref, Tree $tree, string $gedcom = null): ?Media
     {
-        $record = parent::getInstance($xref, $tree, $gedcom);
-
-        if ($record instanceof self) {
-            return $record;
-        }
-
-        return null;
+        return Registry::mediaFactory()->make($xref, $tree, $gedcom);
     }
 
     /**
@@ -93,30 +82,14 @@ class Media extends GedcomRecord
             ->pluck('l_from');
 
         foreach ($linked_ids as $linked_id) {
-            $linked_record = GedcomRecord::getInstance($linked_id, $this->tree);
-            if ($linked_record && !$linked_record->canShow($access_level)) {
+            $linked_record = Registry::gedcomRecordFactory()->make($linked_id, $this->tree);
+            if ($linked_record instanceof GedcomRecord && !$linked_record->canShow($access_level)) {
                 return false;
             }
         }
 
         // ... otherwise apply default behavior
         return parent::canShowByType($access_level);
-    }
-
-    /**
-     * Fetch data from the database
-     *
-     * @param string $xref
-     * @param int    $tree_id
-     *
-     * @return string|null
-     */
-    protected static function fetchGedcomRecord(string $xref, int $tree_id): ?string
-    {
-        return DB::table('media')
-            ->where('m_id', '=', $xref)
-            ->where('m_file', '=', $tree_id)
-            ->value('m_gedcom');
     }
 
     /**
@@ -139,13 +112,10 @@ class Media extends GedcomRecord
      */
     public function firstImageFile(): ?MediaFile
     {
-        foreach ($this->mediaFiles() as $media_file) {
-            if ($media_file->isImage()) {
-                return $media_file;
-            }
-        }
-
-        return null;
+        return $this->mediaFiles()
+            ->first(static function (MediaFile $media_file): bool {
+                return $media_file->isImage() && !$media_file->isExternal();
+            });
     }
 
     /**
@@ -230,11 +200,25 @@ class Media extends GedcomRecord
         }
 
         // Display the first file of any type
-        foreach ($this->mediaFiles() as $media_file) {
+        $media_file = $this->mediaFiles()->first();
+
+        if ($media_file instanceof MediaFile) {
             return $media_file->displayImage($width, $height, $fit, $attributes);
         }
 
         // No image?
         return '';
+    }
+
+    /**
+     * Lock the database row, to prevent concurrent edits.
+     */
+    public function lock(): void
+    {
+        DB::table('media')
+            ->where('m_file', '=', $this->tree->id())
+            ->where('m_id', '=', $this->xref())
+            ->lockForUpdate()
+            ->get();
     }
 }

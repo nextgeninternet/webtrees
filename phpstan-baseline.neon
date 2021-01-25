@@ -1,34 +1,9 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Application\\:\\:makeParameters\\(\\) has parameter \\$parameters with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Application.php
-
-		-
-			message: "#^Cannot call method setTimezone\\(\\) on \\$this\\(Fisharebest\\\\Webtrees\\\\Carbon\\)\\|string\\.$#"
-			count: 1
-			path: app/Carbon.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Census\\\\AbstractCensusColumn\\:\\:lastPartOfPlace\\(\\) should return string but returns string\\|false\\.$#"
-			count: 1
-			path: app/Census/AbstractCensusColumn.php
-
-		-
-			message: "#^Cannot call method getAllNames\\(\\) on Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
-			count: 1
-			path: app/Census/CensusColumnFullName.php
-
-		-
 			message: "#^Parameter \\#1 \\$line of method Fisharebest\\\\Webtrees\\\\CommonMark\\\\CensusTableParser\\:\\:parseRow\\(\\) expects string, string\\|null given\\.$#"
-			count: 2
-			path: app/CommonMark/CensusTableParser.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Config\\:\\:emptyFacts\\(\\) return type has no value type specified in iterable type array\\.$#"
 			count: 1
-			path: app/Config.php
+			path: app/CommonMark/CensusTableParser.php
 
 		-
 			message: "#^Cannot call method calendarUrl\\(\\) on Fisharebest\\\\Webtrees\\\\Date\\\\AbstractCalendarDate\\|null\\.$#"
@@ -36,64 +11,9 @@ parameters:
 			path: app/Date.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Date\\\\AbstractCalendarDate\\:\\:__construct\\(\\) has parameter \\$date with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Date/AbstractCalendarDate.php
-
-		-
-			message: "#^Parameter \\#3 \\$subject of function str_replace expects array\\|string, string\\|null given\\.$#"
-			count: 1
-			path: app/Date/AbstractCalendarDate.php
-
-		-
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Date\\\\AbstractCalendarDate\\:\\:formatGedcomMonth\\(\\) should return string but returns int\\|string\\|false\\.$#"
 			count: 1
 			path: app/Date/AbstractCalendarDate.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Date\\\\FrenchDate\\:\\:__construct\\(\\) has parameter \\$date with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Date/FrenchDate.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Date\\\\GregorianDate\\:\\:__construct\\(\\) has parameter \\$date with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Date/GregorianDate.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Date\\\\HijriDate\\:\\:__construct\\(\\) has parameter \\$date with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Date/HijriDate.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Date\\\\JalaliDate\\:\\:__construct\\(\\) has parameter \\$date with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Date/JalaliDate.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Date\\\\JewishDate\\:\\:__construct\\(\\) has parameter \\$date with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Date/JewishDate.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Date\\\\JulianDate\\:\\:__construct\\(\\) has parameter \\$date with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Date/JulianDate.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\DebugBar\\\\ViewCollector\\:\\:addView\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/DebugBar/ViewCollector.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\DebugBar\\\\ViewCollector\\:\\:collect\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/DebugBar/ViewCollector.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\DebugBar\\\\ViewCollector\\:\\:getWidgets\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/DebugBar/ViewCollector.php
 
 		-
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Fact\\:\\:getNotes\\(\\) should return array\\<Fisharebest\\\\Webtrees\\\\Note\\|string\\> but returns array\\<int, array\\|Fisharebest\\\\Webtrees\\\\Note\\|string\\|null\\>\\.$#"
@@ -101,14 +21,24 @@ parameters:
 			path: app/Fact.php
 
 		-
+			message: "#^Parameter \\#1 \\$string of function strlen expects string, string\\|false given\\.$#"
+			count: 1
+			path: app/Factories/ImageFactory.php
+
+		-
+			message: "#^Parameter \\#3 \\$headers of function response expects array\\<string\\>, array\\<string, string\\|false\\> given\\.$#"
+			count: 1
+			path: app/Factories/ImageFactory.php
+
+		-
+			message: "#^Parameter \\#2 \\$mime_type of method Fisharebest\\\\Webtrees\\\\Factories\\\\ImageFactory\\:\\:imageResponse\\(\\) expects string, string\\|false given\\.$#"
+			count: 1
+			path: app/Factories/ImageFactory.php
+
+		-
 			message: "#^Parameter \\#1 \\$commonMark of method League\\\\CommonMark\\\\Converter\\:\\:convertToHtml\\(\\) expects string, string\\|null given\\.$#"
 			count: 1
 			path: app/Filter.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Functions\\\\Functions\\:\\:getRelationship\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Functions/Functions.php
 
 		-
 			message: "#^Call to an undefined method Fisharebest\\\\Webtrees\\\\Family\\|Fisharebest\\\\Webtrees\\\\Individual\\:\\:childFamilies\\(\\)\\.$#"
@@ -131,21 +61,6 @@ parameters:
 			path: app/Functions/Functions.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Functions\\\\FunctionsDate\\:\\:getAgeAtEvent\\(\\) should return string but returns string\\|null\\.$#"
-			count: 1
-			path: app/Functions/FunctionsDate.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Functions\\\\FunctionsEdit\\:\\:editLanguageCheckboxes\\(\\) has parameter \\$accepted_languages with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Functions/FunctionsEdit.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between 'UNKNOWN' and 'SOUR' will always evaluate to false\\.$#"
-			count: 1
-			path: app/Functions/FunctionsEdit.php
-
-		-
 			message: "#^Argument of an invalid type array\\<int, string\\>\\|false supplied for foreach, only iterables are supported\\.$#"
 			count: 1
 			path: app/Functions/FunctionsExport.php
@@ -157,36 +72,16 @@ parameters:
 
 		-
 			message: "#^Parameter \\#3 \\$subject of function preg_replace expects array\\|string, string\\|null given\\.$#"
-			count: 11
+			count: 9
 			path: app/Functions/FunctionsImport.php
 
 		-
 			message: "#^Parameter \\#3 \\$subject of function str_replace expects array\\|string, string\\|null given\\.$#"
-			count: 3
+			count: 2
 			path: app/Functions/FunctionsImport.php
 
 		-
-			message: "#^Parameter \\#2 \\$gedcom of class Fisharebest\\\\Webtrees\\\\Media constructor expects string, string\\|null given\\.$#"
-			count: 1
-			path: app/Functions/FunctionsImport.php
-
-		-
-			message: "#^Cannot call method getNote\\(\\) on Fisharebest\\\\Webtrees\\\\Note\\|null\\.$#"
-			count: 1
-			path: app/Functions/FunctionsPrint.php
-
-		-
-			message: "#^Parameter \\#2 \\$start of function substr expects int, int\\|false given\\.$#"
-			count: 1
-			path: app/Functions/FunctionsPrint.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Functions\\\\FunctionsPrint\\:\\:checkFactUnique\\(\\) has parameter \\$recfacts with no value type specified in iterable type Illuminate\\\\Support\\\\Collection\\.$#"
-			count: 1
-			path: app/Functions/FunctionsPrint.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Functions\\\\FunctionsPrint\\:\\:printAddNewFact\\(\\) has parameter \\$usedfacts with no value type specified in iterable type Illuminate\\\\Support\\\\Collection\\.$#"
+			message: "#^Parameter \\#2 \\$start of function substr expects int, int\\<0, max\\>\\|false given\\.$#"
 			count: 1
 			path: app/Functions/FunctionsPrint.php
 
@@ -211,13 +106,13 @@ parameters:
 			path: app/Functions/FunctionsPrintFacts.php
 
 		-
-			message: "#^Parameter \\#3 \\$offset of function strpos expects int, int\\|false given\\.$#"
-			count: 2
+			message: "#^Parameter \\#3 \\$offset of function strpos expects int, int\\<0, max\\>\\|false given\\.$#"
+			count: 1
 			path: app/Functions/FunctionsPrintFacts.php
 
 		-
-			message: "#^Parameter \\#2 \\$start of function substr expects int, int\\|false given\\.$#"
-			count: 2
+			message: "#^Parameter \\#2 \\$start of function substr expects int, int\\<0, max\\>\\|false given\\.$#"
+			count: 1
 			path: app/Functions/FunctionsPrintFacts.php
 
 		-
@@ -227,12 +122,7 @@ parameters:
 
 		-
 			message: "#^Parameter \\#1 \\$value of function e expects Illuminate\\\\Contracts\\\\Support\\\\Htmlable\\|string, array\\<string\\>\\|string given\\.$#"
-			count: 1
-			path: app/Functions/FunctionsPrintFacts.php
-
-		-
-			message: "#^Parameter \\#1 \\$value of function e expects Illuminate\\\\Contracts\\\\Support\\\\Htmlable\\|string, \\(array\\<string\\>\\)\\|string given\\.$#"
-			count: 1
+			count: 2
 			path: app/Functions/FunctionsPrintFacts.php
 
 		-
@@ -251,12 +141,16 @@ parameters:
 			path: app/Functions/FunctionsPrintFacts.php
 
 		-
-			message: "#^Binary operation \"\\.\" between array\\|string and '\n' results in an error\\.$#"
+			message:
+				"""
+					#^Binary operation "\\." between array\\|string and '
+					' results in an error\\.$#
+				"""
 			count: 2
 			path: app/Functions/FunctionsRtl.php
 
 		-
-			message: "#^Parameter \\#1 \\$str of function substr expects string, array\\|string given\\.$#"
+			message: "#^Parameter \\#1 \\$string of function substr expects string, array\\|string given\\.$#"
 			count: 4
 			path: app/Functions/FunctionsRtl.php
 
@@ -281,23 +175,33 @@ parameters:
 			path: app/Functions/FunctionsRtl.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Functions\\\\FunctionsRtl\\:\\:getChar\\(\\) return type has no value type specified in iterable type array\\.$#"
+			message: "#^Parameter \\#3 \\$length of function substr expects int, int\\<0, max\\>\\|false given\\.$#"
+			count: 2
+			path: app/Functions/FunctionsRtl.php
+
+		-
+			message: "#^Parameter \\#2 \\$start of function substr expects int, int\\<0, max\\>\\|false given\\.$#"
+			count: 2
+			path: app/Functions/FunctionsRtl.php
+
+		-
+			message: "#^Cannot call method transliterate\\(\\) on Transliterator\\|null\\.$#"
 			count: 1
-			path: app/Functions/FunctionsRtl.php
+			path: app/GedcomRecord.php
 
 		-
-			message: "#^Parameter \\#3 \\$length of function substr expects int, int\\|false given\\.$#"
-			count: 2
-			path: app/Functions/FunctionsRtl.php
-
-		-
-			message: "#^Parameter \\#2 \\$start of function substr expects int, int\\|false given\\.$#"
-			count: 2
-			path: app/Functions/FunctionsRtl.php
+			message: "#^Parameter \\#3 \\$subject of function preg_replace expects array\\|string, string\\|false given\\.$#"
+			count: 1
+			path: app/GedcomRecord.php
 
 		-
 			message: "#^Parameter \\#1 \\$str of function trim expects string, string\\|null given\\.$#"
-			count: 2
+			count: 3
+			path: app/GedcomRecord.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\GedcomRecord\\:\\:lastChangeTimestamp\\(\\) should return Fisharebest\\\\Webtrees\\\\Carbon but returns Fisharebest\\\\Webtrees\\\\Carbon\\|false\\.$#"
+			count: 3
 			path: app/GedcomRecord.php
 
 		-
@@ -316,27 +220,17 @@ parameters:
 			path: app/GedcomRecord.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\GedcomRecord\\:\\:extractNamesFromFacts\\(\\) has parameter \\$facts with no value type specified in iterable type Illuminate\\\\Support\\\\Collection\\.$#"
-			count: 1
-			path: app/GedcomRecord.php
-
-		-
 			message: "#^Parameter \\#1 \\$stack of function array_shift expects array, array\\<int, string\\>\\|false given\\.$#"
 			count: 2
 			path: app/GedcomRecord.php
 
 		-
-			message: "#^Parameter \\#2 \\$input1 of function array_map expects array, array\\|false given\\.$#"
+			message: "#^Parameter \\#1 \\$num of function dechex expects int, float\\|int given\\.$#"
 			count: 1
 			path: app/GedcomTag.php
 
 		-
-			message: "#^Parameter \\#1 \\$decimal_number of function dechex expects int, float\\|int given\\.$#"
-			count: 1
-			path: app/GedcomTag.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between 'dev' and '' will always evaluate to false\\.$#"
+			message: "#^Strict comparison using \\=\\=\\= between '\\-dev' and '' will always evaluate to false\\.$#"
 			count: 1
 			path: app/Helpers/functions.php
 
@@ -344,16 +238,6 @@ parameters:
 			message: "#^Parameter \\#1 \\$string of function strlen expects string, string\\|false given\\.$#"
 			count: 2
 			path: app/Helpers/functions.php
-
-		-
-			message: "#^Parameter \\#2 \\$value of method Psr\\\\Http\\\\Message\\\\MessageInterface\\:\\:withHeader\\(\\) expects array\\<string\\>\\|string, int\\|string given\\.$#"
-			count: 1
-			path: app/Helpers/functions.php
-
-		-
-			message: "#^Binary operation \"\\+\" between 1 and string results in an error\\.$#"
-			count: 1
-			path: app/Http/Controllers/AbstractEditController.php
 
 		-
 			message: "#^Cannot call method facts\\(\\) on Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
@@ -388,11 +272,6 @@ parameters:
 		-
 			message: "#^Parameter \\#1 \\$str of function sha1 expects string, string\\|false given\\.$#"
 			count: 1
-			path: app/Http/Controllers/Admin/ImportThumbnailsController.php
-
-		-
-			message: "#^Parameter \\#2 \\$str of function explode expects string, string\\|false given\\.$#"
-			count: 3
 			path: app/Http/Controllers/Admin/ImportThumbnailsController.php
 
 		-
@@ -431,482 +310,17 @@ parameters:
 			path: app/Http/Controllers/Admin/ImportThumbnailsController.php
 
 		-
-			message: "#^Cannot access offset 0 on \\(array\\<int, string\\>\\)\\|false\\.$#"
+			message: "#^Cannot access offset 0 on \\(array\\<int, string\\>&nonEmpty\\)\\|false\\.$#"
 			count: 2
 			path: app/Http/Controllers/Admin/ImportThumbnailsController.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\Admin\\\\LocationController\\:\\:getHierarchy\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Cannot access property \\$pl_place on object\\|null\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Cannot access property \\$fqpn on object\\|null\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Cannot access property \\$pl_parent_id on object\\|null\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\Admin\\\\LocationController\\:\\:childLocationStatus\\(\\) should return stdClass but returns object\\|null\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\Admin\\\\LocationController\\:\\:mapLocationData\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$pl_zoom\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$pl_lati\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$pl_long\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Binary operation \"\\.\" between 'Places\\-' and array\\|string\\|null results in an error\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\Admin\\\\LocationController\\:\\:buildLevel\\(\\) has parameter \\$placename with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\Admin\\\\LocationController\\:\\:buildLevel\\(\\) has parameter \\$places with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Parameter \\#1 \\$fp of function fputcsv expects resource, resource\\|false given\\.$#"
-			count: 2
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Parameter \\#1 \\$fp of function rewind expects resource, resource\\|false given\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Parameter \\#1 \\$source of function stream_get_contents expects resource, resource\\|false given\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\Admin\\\\LocationController\\:\\:exportGeoJSON\\(\\) has parameter \\$rows with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Parameter \\#1 \\$source of function stream_get_contents expects resource, resource\\|null given\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Parameter \\#1 \\$haystack of function stripos expects string, string\\|false given\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Parameter \\#1 \\$json of function json_decode expects string, string\\|false given\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Parameter \\#1 \\$fp of function rewind expects resource, resource\\|null given\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Parameter \\#1 \\$fp of function fgetcsv expects resource, resource\\|null given\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Offset 0 does not exist on array\\|null\\.$#"
-			count: 2
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Parameter \\#1 \\$var of function count expects array\\|Countable, array\\|null given\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Parameter \\#1 \\$input of function array_reverse expects array, array\\|null given\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Parameter \\#1 \\$input of function array_slice expects array, array\\|null given\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Offset int does not exist on array\\|null\\.$#"
-			count: 4
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Parameter \\#1 \\$fp of function fclose expects resource, resource\\|null given\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Cannot access offset 'fqpn' on array\\|false\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Cannot access offset 'pl_lati' on array\\|false\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Cannot access offset 'pl_long' on array\\|false\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Cannot access offset 'pl_zoom' on array\\|false\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Cannot access offset 'pl_icon' on array\\|false\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/LocationController.php
-
-		-
-			message: "#^Variable \\$media in PHPDoc tag @var does not match assigned variable \\$tree\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/MediaController.php
-
-		-
-			message: "#^Parameter \\#4 \\$sort_columns of method Fisharebest\\\\Webtrees\\\\Services\\\\DatatablesService\\:\\:handleQuery\\(\\) expects array\\<string\\>, array\\<int, Illuminate\\\\Database\\\\Query\\\\Expression\\|string\\> given\\.$#"
-			count: 2
-			path: app/Http/Controllers/Admin/MediaController.php
-
-		-
-			message: "#^Parameter \\#2 \\$str of function explode expects string, string\\|false given\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/MediaController.php
-
-		-
-			message: "#^Cannot access offset '0' on array\\|false\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/MediaController.php
-
-		-
-			message: "#^Cannot access offset '1' on array\\|false\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/MediaController.php
-
-		-
-			message: "#^Parameter \\#2 \\$resource of method League\\\\Flysystem\\\\FilesystemInterface\\:\\:writeStream\\(\\) expects resource, resource\\|null given\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/MediaController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\Admin\\\\ModuleController\\:\\:updateOrder\\(\\) has parameter \\$modules with no value type specified in iterable type Illuminate\\\\Support\\\\Collection\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/ModuleController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\Admin\\\\ModuleController\\:\\:updateStatus\\(\\) has parameter \\$modules with no value type specified in iterable type Illuminate\\\\Support\\\\Collection\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/ModuleController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\Admin\\\\ModuleController\\:\\:updateAccessLevel\\(\\) has parameter \\$modules with no value type specified in iterable type Illuminate\\\\Support\\\\Collection\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/ModuleController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\Admin\\\\UsersController\\:\\:themeOptions\\(\\) should return Illuminate\\\\Support\\\\Collection&iterable\\<string\\> but returns Illuminate\\\\Support\\\\Collection&iterable\\<Fisharebest\\\\Webtrees\\\\Module\\\\ModuleInterface\\>\\.$#"
-			count: 1
-			path: app/Http/Controllers/Admin/UsersController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\AdminController\\:\\:privacyConstants\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\AdminController\\:\\:privacyRestrictions\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\AdminSiteController\\:\\:themeOptions\\(\\) should return Illuminate\\\\Support\\\\Collection&iterable\\<string\\> but returns Illuminate\\\\Support\\\\Collection&iterable\\<Fisharebest\\\\Webtrees\\\\Module\\\\ModuleInterface\\>\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminSiteController.php
-
-		-
-			message: "#^Parameter \\#1 \\$str of function strtoupper expects string, int\\|string given\\.$#"
-			count: 2
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Parameter \\#3 \\$xref1 of method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\AdminTreesController\\:\\:checkLinkMessage\\(\\) expects string, int\\|string given\\.$#"
-			count: 6
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Parameter \\#5 \\$xref2 of method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\AdminTreesController\\:\\:checkLinkMessage\\(\\) expects string, int\\|string given\\.$#"
-			count: 6
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Parameter \\#2 \\$xref of method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\AdminTreesController\\:\\:checkLink\\(\\) expects string, int\\|string given\\.$#"
-			count: 5
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Parameter \\#3 \\$xref1 of method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\AdminTreesController\\:\\:checkReverseLink\\(\\) expects string, int\\|string given\\.$#"
-			count: 5
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Parameter \\#4 \\$xref2 of method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\AdminTreesController\\:\\:checkReverseLink\\(\\) expects string, int\\|string given\\.$#"
-			count: 5
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Parameter \\#1 \\$path of function basename expects string, string\\|null given\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\AdminTreesController\\:\\:checkReverseLink\\(\\) has parameter \\$links with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\AdminTreesController\\:\\:checkReverseLink\\(\\) has parameter \\$reciprocal with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\AdminTreesController\\:\\:duplicateRecords\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Source but returns Fisharebest\\\\Webtrees\\\\Source\\|null\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Individual but returns Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Family but returns Fisharebest\\\\Webtrees\\\\Family\\|null\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Media but returns Fisharebest\\\\Webtrees\\\\Media\\|null\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\AdminTreesController\\:\\:gedcomFiles\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Parameter \\#1 \\$fp of function fread expects resource, resource\\|false given\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Parameter \\#1 \\$fp of function fclose expects resource, resource\\|false given\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Parameter \\#2 \\$subject of function preg_match expects string, string\\|false given\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\AdminTreesController\\:\\:themeOptions\\(\\) should return Illuminate\\\\Support\\\\Collection&iterable\\<string\\> but returns Illuminate\\\\Support\\\\Collection&iterable\\<Fisharebest\\\\Webtrees\\\\Module\\\\ModuleInterface\\>\\.$#"
-			count: 1
-			path: app/Http/Controllers/AdminTreesController.php
-
-		-
-			message: "#^Parameter \\#1 \\$json of function json_decode expects string, bool\\|string given\\.$#"
-			count: 1
-			path: app/Http/Controllers/AutocompleteController.php
-
-		-
-			message: "#^Binary operation \"\\*\" between int\\|string\\|null and 2 results in an error\\.$#"
-			count: 2
-			path: app/Http/Controllers/BranchesController.php
-
-		-
-			message: "#^Parameter \\#1 \\$list of method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\CalendarController\\:\\:calendarListText\\(\\) expects array\\<Fisharebest\\\\Webtrees\\\\Fact\\>, array\\<int\\|string, string\\> given\\.$#"
-			count: 2
-			path: app/Http/Controllers/CalendarController.php
-
-		-
-			message: "#^Call to an undefined method Carbon\\\\CarbonImmutable\\:\\:julianDay\\(\\)\\.$#"
-			count: 1
-			path: app/Http/Controllers/CalendarController.php
-
-		-
-			message: "#^Access to an undefined property Fisharebest\\\\Webtrees\\\\Fact\\:\\:\\$anniv\\.$#"
-			count: 1
-			path: app/Http/Controllers/CalendarController.php
-
-		-
-			message: "#^Cannot call method fullName\\(\\) on Fisharebest\\\\Webtrees\\\\GedcomRecord\\|null\\.$#"
-			count: 1
-			path: app/Http/Controllers/CalendarController.php
-
-		-
-			message: "#^Cannot call method url\\(\\) on Fisharebest\\\\Webtrees\\\\GedcomRecord\\|null\\.$#"
-			count: 1
-			path: app/Http/Controllers/CalendarController.php
-
-		-
-			message: "#^Cannot call method createFact\\(\\) on Fisharebest\\\\Webtrees\\\\GedcomRecord\\|null\\.$#"
-			count: 1
-			path: app/Http/Controllers/EditMediaController.php
-
-		-
-			message: "#^Cannot call method url\\(\\) on Fisharebest\\\\Webtrees\\\\Media\\|null\\.$#"
-			count: 1
-			path: app/Http/Controllers/EditMediaController.php
-
-		-
-			message: "#^Parameter \\#1 \\$gedcom of method Fisharebest\\\\Webtrees\\\\GedcomRecord\\:\\:updateRecord\\(\\) expects string, string\\|null given\\.$#"
-			count: 1
-			path: app/Http/Controllers/EditNoteController.php
-
-		-
-			message: "#^Cannot access property \\$chunk_data on object\\|null\\.$#"
-			count: 6
-			path: app/Http/Controllers/GedcomFileController.php
-
-		-
-			message: "#^Cannot access property \\$gedcom_chunk_id on object\\|null\\.$#"
-			count: 2
-			path: app/Http/Controllers/GedcomFileController.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$chunk_data\\.$#"
-			count: 2
-			path: app/Http/Controllers/GedcomFileController.php
-
-		-
-			message: "#^Argument of an invalid type array\\<int, string\\>\\|false supplied for foreach, only iterables are supported\\.$#"
-			count: 1
-			path: app/Http/Controllers/GedcomFileController.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$gedcom_chunk_id\\.$#"
-			count: 1
-			path: app/Http/Controllers/GedcomFileController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\ListController\\:\\:allFolders\\(\\) should return array\\<string\\> but returns array\\|false\\.$#"
-			count: 1
-			path: app/Http/Controllers/ListController.php
-
-		-
-			message: "#^Parameter \\#3 \\$headers of function response expects array\\<string\\>, array\\<string, int\\|string\\> given\\.$#"
-			count: 3
-			path: app/Http/Controllers/MediaFileController.php
-
-		-
-			message: "#^Parameter \\#1 \\$string of function strlen expects string, string\\|false given\\.$#"
-			count: 1
-			path: app/Http/Controllers/MediaFileController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\MediaFileController\\:\\:generateImage\\(\\) has parameter \\$params with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/MediaFileController.php
-
-		-
-			message: "#^Parameter \\#3 \\$headers of function response expects array\\<string\\>, array\\<string, int\\|string\\|false\\> given\\.$#"
-			count: 2
-			path: app/Http/Controllers/MediaFileController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\PlaceHierarchyController\\:\\:getList\\(\\) should return array\\<array\\<Fisharebest\\\\Webtrees\\\\Place\\>\\> but returns array\\<string, array\\<array\\>\\>\\.$#"
-			count: 1
-			path: app/Http/Controllers/PlaceHierarchyController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\PlaceHierarchyController\\:\\:getHierarchy\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/PlaceHierarchyController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\PlaceHierarchyController\\:\\:getEvents\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/PlaceHierarchyController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\PlaceHierarchyController\\:\\:breadcrumbs\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/PlaceHierarchyController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\PlaceHierarchyController\\:\\:mapData\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/PlaceHierarchyController.php
-
-		-
-			message: "#^Cannot access property \\$tot on int\\|stdClass\\.$#"
-			count: 1
-			path: app/Http/Controllers/PlaceHierarchyController.php
-
-		-
-			message: "#^Parameter \\#1 \\$value of function e expects Illuminate\\\\Contracts\\\\Support\\\\Htmlable\\|string, string\\|false given\\.$#"
-			count: 1
-			path: app/Http/Controllers/SetupController.php
-
-		-
-			message: "#^Parameter \\#1 \\$str of function substr expects string, string\\|false given\\.$#"
-			count: 5
-			path: app/Http/Controllers/SetupController.php
-
-		-
-			message: "#^Binary operation \"\\*\" between string and 1024 results in an error\\.$#"
-			count: 2
-			path: app/Http/Controllers/SetupController.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Controllers\\\\SetupController\\:\\:connectToDatabase\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Http/Controllers/SetupController.php
-
-		-
 			message: "#^Parameter \\#1 \\$path of method Psr\\\\Http\\\\Message\\\\UriInterface\\:\\:withPath\\(\\) expects string, string\\|false given\\.$#"
+			count: 1
+			path: app/Http/Middleware/BaseUrl.php
+
+		-
+			message: "#^Parameter \\#1 \\$scheme of method Psr\\\\Http\\\\Message\\\\UriInterface\\:\\:withScheme\\(\\) expects string, string\\|false given\\.$#"
 			count: 1
 			path: app/Http/Middleware/BaseUrl.php
 
@@ -917,11 +331,6 @@ parameters:
 
 		-
 			message: "#^Parameter \\#1 \\$port of method Psr\\\\Http\\\\Message\\\\UriInterface\\:\\:withPort\\(\\) expects int\\|null, int\\|false\\|null given\\.$#"
-			count: 1
-			path: app/Http/Middleware/BaseUrl.php
-
-		-
-			message: "#^Parameter \\#1 \\$scheme of method Psr\\\\Http\\\\Message\\\\UriInterface\\:\\:withScheme\\(\\) expects string, string\\|false given\\.$#"
 			count: 1
 			path: app/Http/Middleware/BaseUrl.php
 
@@ -941,12 +350,7 @@ parameters:
 			path: app/Http/Middleware/ReadConfigIni.php
 
 		-
-			message: "#^Parameter \\#1 \\$name of method Psr\\\\Http\\\\Message\\\\ServerRequestInterface\\:\\:withAttribute\\(\\) expects string, int\\|string given\\.$#"
-			count: 1
-			path: app/Http/Middleware/Router.php
-
-		-
-			message: "#^Call to function assert\\(\\) with false and LogicException will always evaluate to false\\.$#"
+			message: "#^Call to function assert\\(\\) with false will always evaluate to false\\.$#"
 			count: 1
 			path: app/Http/Middleware/UseDatabase.php
 
@@ -954,16 +358,6 @@ parameters:
 			message: "#^Instanceof between \\$this\\(Fisharebest\\\\Webtrees\\\\Http\\\\Middleware\\\\UseDatabase\\) and Illuminate\\\\Database\\\\Query\\\\Builder will always evaluate to false\\.$#"
 			count: 1
 			path: app/Http/Middleware/UseDatabase.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Middleware\\\\UseLanguage\\:\\:languages\\(\\) return type has no value type specified in iterable type Generator\\.$#"
-			count: 1
-			path: app/Http/Middleware/UseLanguage.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Middleware\\\\UseTheme\\:\\:themes\\(\\) return type has no value type specified in iterable type Generator\\.$#"
-			count: 1
-			path: app/Http/Middleware/UseTheme.php
 
 		-
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Middleware\\\\UseTransaction\\:\\:process\\(\\) should return Psr\\\\Http\\\\Message\\\\ResponseInterface but returns Psr\\\\Http\\\\Message\\\\ResponseInterface\\|null\\.$#"
@@ -976,9 +370,29 @@ parameters:
 			path: app/Http/Middleware/WrapHandler.php
 
 		-
+			message: "#^Access to an undefined property Fisharebest\\\\Webtrees\\\\Fact\\:\\:\\$anniv\\.$#"
+			count: 1
+			path: app/Http/RequestHandlers/CalendarEvents.php
+
+		-
+			message: "#^Cannot call method fullName\\(\\) on Fisharebest\\\\Webtrees\\\\GedcomRecord\\|null\\.$#"
+			count: 1
+			path: app/Http/RequestHandlers/CalendarEvents.php
+
+		-
+			message: "#^Cannot call method url\\(\\) on Fisharebest\\\\Webtrees\\\\GedcomRecord\\|null\\.$#"
+			count: 1
+			path: app/Http/RequestHandlers/CalendarEvents.php
+
+		-
 			message: "#^Cannot call method realName\\(\\) on Fisharebest\\\\Webtrees\\\\User\\|null\\.$#"
 			count: 1
 			path: app/Http/RequestHandlers/ContactPage.php
+
+		-
+			message: "#^Cannot access offset 'data_fix' on array\\|object\\|null\\.$#"
+			count: 1
+			path: app/Http/RequestHandlers/DataFixSelect.php
 
 		-
 			message: "#^Cannot access offset 'type' on array\\|false\\.$#"
@@ -987,26 +401,6 @@ parameters:
 
 		-
 			message: "#^Left side of && is always true\\.$#"
-			count: 1
-			path: app/Http/RequestHandlers/DeleteRecord.php
-
-		-
-			message: "#^Cannot call method fullName\\(\\) on Fisharebest\\\\Webtrees\\\\GedcomRecord\\|null\\.$#"
-			count: 3
-			path: app/Http/RequestHandlers/DeleteRecord.php
-
-		-
-			message: "#^Cannot call method deleteRecord\\(\\) on Fisharebest\\\\Webtrees\\\\GedcomRecord\\|null\\.$#"
-			count: 1
-			path: app/Http/RequestHandlers/DeleteRecord.php
-
-		-
-			message: "#^Cannot call method gedcom\\(\\) on Fisharebest\\\\Webtrees\\\\GedcomRecord\\|null\\.$#"
-			count: 1
-			path: app/Http/RequestHandlers/DeleteRecord.php
-
-		-
-			message: "#^Cannot call method updateRecord\\(\\) on Fisharebest\\\\Webtrees\\\\GedcomRecord\\|null\\.$#"
 			count: 1
 			path: app/Http/RequestHandlers/DeleteRecord.php
 
@@ -1021,18 +415,18 @@ parameters:
 			path: app/Http/RequestHandlers/DeleteRecord.php
 
 		-
+			message: "#^Parameter \\#1 \\$gedcom of method Fisharebest\\\\Webtrees\\\\GedcomRecord\\:\\:updateRecord\\(\\) expects string, string\\|null given\\.$#"
+			count: 1
+			path: app/Http/RequestHandlers/EditNoteAction.php
+
+		-
 			message: "#^Parameter \\#1 \\$str of function trim expects string, string\\|null given\\.$#"
 			count: 1
 			path: app/Http/RequestHandlers/EditRawRecordAction.php
 
 		-
-			message: "#^Parameter \\#2 \\$stream of static method Fisharebest\\\\Webtrees\\\\Functions\\\\FunctionsExport\\:\\:exportGedcom\\(\\) expects resource, resource\\|false given\\.$#"
-			count: 2
-			path: app/Http/RequestHandlers/ExportGedcomClient.php
-
-		-
-			message: "#^Parameter \\#1 \\$fp of function rewind expects resource, resource\\|false given\\.$#"
-			count: 2
+			message: "#^Parameter \\#1 \\$fp of function stream_get_meta_data expects resource, resource\\|false given\\.$#"
+			count: 1
 			path: app/Http/RequestHandlers/ExportGedcomClient.php
 
 		-
@@ -1041,44 +435,34 @@ parameters:
 			path: app/Http/RequestHandlers/ExportGedcomClient.php
 
 		-
-			message: "#^Parameter \\#1 \\$fp of function fclose expects resource, resource\\|false given\\.$#"
-			count: 1
-			path: app/Http/RequestHandlers/ExportGedcomClient.php
+			message: "#^Cannot access property \\$chunk_data on object\\|null\\.$#"
+			count: 6
+			path: app/Http/RequestHandlers/GedcomLoad.php
 
 		-
-			message: "#^Variable \\$response_factory in PHPDoc tag @var does not match assigned variable \\$stream_factory\\.$#"
-			count: 1
-			path: app/Http/RequestHandlers/ExportGedcomClient.php
+			message: "#^Cannot access property \\$gedcom_chunk_id on object\\|null\\.$#"
+			count: 2
+			path: app/Http/RequestHandlers/GedcomLoad.php
 
 		-
-			message: "#^Parameter \\#1 \\$stream of method Fisharebest\\\\Webtrees\\\\Tree\\:\\:exportGedcom\\(\\) expects resource, resource\\|false given\\.$#"
-			count: 1
-			path: app/Http/RequestHandlers/ExportGedcomServer.php
+			message: "#^Access to an undefined property object\\:\\:\\$chunk_data\\.$#"
+			count: 2
+			path: app/Http/RequestHandlers/GedcomLoad.php
 
 		-
-			message: "#^Parameter \\#1 \\$fp of function rewind expects resource, resource\\|false given\\.$#"
+			message: "#^Argument of an invalid type array\\<int, string\\>\\|false supplied for foreach, only iterables are supported\\.$#"
 			count: 1
-			path: app/Http/RequestHandlers/ExportGedcomServer.php
+			path: app/Http/RequestHandlers/GedcomLoad.php
 
 		-
-			message: "#^Parameter \\#2 \\$resource of method League\\\\Flysystem\\\\FilesystemInterface\\:\\:putStream\\(\\) expects resource, resource\\|false given\\.$#"
+			message: "#^Access to an undefined property object\\:\\:\\$gedcom_chunk_id\\.$#"
 			count: 1
-			path: app/Http/RequestHandlers/ExportGedcomServer.php
+			path: app/Http/RequestHandlers/GedcomLoad.php
 
 		-
-			message: "#^Parameter \\#1 \\$fp of function fclose expects resource, resource\\|false given\\.$#"
+			message: "#^Parameter \\#1 \\$path of function basename expects string, string\\|null given\\.$#"
 			count: 1
-			path: app/Http/RequestHandlers/ExportGedcomServer.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\RequestHandlers\\\\HelpText\\:\\:dmyOrder\\(\\) should return string but returns string\\|null\\.$#"
-			count: 1
-			path: app/Http/RequestHandlers/HelpText.php
-
-		-
-			message: "#^Parameter \\#1 \\$type of static method Fisharebest\\\\Webtrees\\\\GedcomCode\\\\GedcomCodeName\\:\\:getValue\\(\\) expects string, string\\|null given\\.$#"
-			count: 1
-			path: app/Http/RequestHandlers/IndividualPage.php
+			path: app/Http/RequestHandlers/ImportGedcomAction.php
 
 		-
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\RequestHandlers\\\\IndividualPage\\:\\:getSidebars\\(\\) should return Illuminate\\\\Support\\\\Collection&iterable\\<Fisharebest\\\\Webtrees\\\\Module\\\\ModuleSidebarInterface\\> but returns Illuminate\\\\Support\\\\Collection&iterable\\<Fisharebest\\\\Webtrees\\\\Module\\\\ModuleInterface\\>\\.$#"
@@ -1091,24 +475,54 @@ parameters:
 			path: app/Http/RequestHandlers/IndividualPage.php
 
 		-
-			message: "#^Strict comparison using \\!\\=\\= between 'UNKNOWN' and 'UNKNOWN' will always evaluate to false\\.$#"
+			message: "#^Parameter \\#4 \\$sort_columns of method Fisharebest\\\\Webtrees\\\\Services\\\\DatatablesService\\:\\:handleQuery\\(\\) expects array\\<string\\>, array\\<int, Illuminate\\\\Database\\\\Query\\\\Expression\\|string\\> given\\.$#"
+			count: 2
+			path: app/Http/RequestHandlers/ManageMediaData.php
+
+		-
+			message: "#^Cannot access offset '0' on array\\|false\\.$#"
 			count: 1
-			path: app/Http/RequestHandlers/MergeFactsAction.php
+			path: app/Http/RequestHandlers/ManageMediaData.php
+
+		-
+			message: "#^Cannot access offset '1' on array\\|false\\.$#"
+			count: 1
+			path: app/Http/RequestHandlers/ManageMediaData.php
+
+		-
+			message: "#^Parameter \\#1 \\$haystack of function str_contains expects string, string\\|false given\\.$#"
+			count: 1
+			path: app/Http/RequestHandlers/MapDataImportAction.php
+
+		-
+			message: "#^Parameter \\#1 \\$json of function json_decode expects string, string\\|false given\\.$#"
+			count: 1
+			path: app/Http/RequestHandlers/MapDataImportAction.php
+
+		-
+			message: "#^Offset 0 does not exist on array\\|null\\.$#"
+			count: 2
+			path: app/Http/RequestHandlers/MapDataImportAction.php
+
+		-
+			message: "#^Parameter \\#1 \\$var of function count expects array\\|Countable, array\\|null given\\.$#"
+			count: 1
+			path: app/Http/RequestHandlers/MapDataImportAction.php
+
+		-
+			message: "#^Parameter \\#1 \\$input of function array_slice expects array, array\\|null given\\.$#"
+			count: 1
+			path: app/Http/RequestHandlers/MapDataImportAction.php
+
+		-
+			message: "#^Offset int does not exist on array\\|null\\.$#"
+			count: 2
+			path: app/Http/RequestHandlers/MapDataImportAction.php
 
 		-
 			message: "#^Parameter \\#1 \\$gedcom of method Fisharebest\\\\Webtrees\\\\GedcomRecord\\:\\:updateRecord\\(\\) expects string, string\\|null given\\.$#"
 			count: 1
 			path: app/Http/RequestHandlers/MergeFactsAction.php
-
-		-
-			message: "#^Strict comparison using \\!\\=\\= between 'UNKNOWN' and 'UNKNOWN' will always evaluate to false\\.$#"
-			count: 1
-			path: app/Http/RequestHandlers/MergeFactsPage.php
-
-		-
-			message: "#^Strict comparison using \\!\\=\\= between 'UNKNOWN' and 'UNKNOWN' will always evaluate to false\\.$#"
-			count: 1
-			path: app/Http/RequestHandlers/MergeRecordsAction.php
 
 		-
 			message: "#^Parameter \\#1 \\$function of function call_user_func expects callable\\(\\)\\: mixed, array\\(Fisharebest\\\\Webtrees\\\\Module\\\\ModuleInterface, string\\) given\\.$#"
@@ -1131,12 +545,7 @@ parameters:
 			path: app/Http/RequestHandlers/PhpInformation.php
 
 		-
-			message: "#^Parameter \\#2 \\$subject of function preg_match expects string, string\\|null given\\.$#"
-			count: 1
-			path: app/Http/RequestHandlers/SearchGeneralPage.php
-
-		-
-			message: "#^Parameter \\#3 \\$subject of function str_replace expects array\\|string, string\\|null given\\.$#"
+			message: "#^Parameter \\#2 \\$subject of function preg_match_all expects string, string\\|null given\\.$#"
 			count: 1
 			path: app/Http/RequestHandlers/SearchGeneralPage.php
 
@@ -1166,14 +575,24 @@ parameters:
 			path: app/Http/RequestHandlers/Select2Place.php
 
 		-
+			message: "#^Parameter \\#1 \\$value of function e expects Illuminate\\\\Contracts\\\\Support\\\\Htmlable\\|string, string\\|false given\\.$#"
+			count: 1
+			path: app/Http/RequestHandlers/SetupWizard.php
+
+		-
+			message: "#^Parameter \\#1 \\$string of function substr expects string, string\\|false given\\.$#"
+			count: 1
+			path: app/Http/RequestHandlers/SetupWizard.php
+
+		-
 			message: "#^Cannot call method local\\(\\) on Fisharebest\\\\Webtrees\\\\Carbon\\|null\\.$#"
 			count: 1
 			path: app/Http/RequestHandlers/SiteLogsData.php
 
 		-
-			message: "#^Parameter \\#2 \\$gedcom of method Fisharebest\\\\Webtrees\\\\GedcomRecord\\:\\:updateFact\\(\\) expects string, string\\|null given\\.$#"
+			message: "#^Parameter \\#2 \\$resource of method League\\\\Flysystem\\\\FilesystemInterface\\:\\:writeStream\\(\\) expects resource, resource\\|null given\\.$#"
 			count: 1
-			path: app/Http/RequestHandlers/UpdatePlacesAction.php
+			path: app/Http/RequestHandlers/UploadMediaAction.php
 
 		-
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Http\\\\Routes\\\\ApiRoutes\\:\\:load\\(\\) has parameter \\$router with no value type specified in iterable type Aura\\\\Router\\\\Map\\.$#"
@@ -1187,6 +606,11 @@ parameters:
 
 		-
 			message: "#^PHPDoc tag @var for variable \\$locales has no value type specified in iterable type Illuminate\\\\Support\\\\Collection\\.$#"
+			count: 1
+			path: app/I18N.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\I18N\\:\\:strcasecmp\\(\\) should return int but returns int\\|false\\.$#"
 			count: 1
 			path: app/I18N.php
 
@@ -1227,11 +651,11 @@ parameters:
 
 		-
 			message: "#^Parameter \\#1 \\$haystack of function strpos expects string, string\\|null given\\.$#"
-			count: 2
+			count: 1
 			path: app/Individual.php
 
 		-
-			message: "#^Parameter \\#1 \\$str of function substr expects string, string\\|null given\\.$#"
+			message: "#^Parameter \\#1 \\$string of function substr expects string, string\\|null given\\.$#"
 			count: 2
 			path: app/Individual.php
 
@@ -1266,102 +690,17 @@ parameters:
 			path: app/MediaFile.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdate\\\\BatchUpdateBasePlugin\\:\\:createEditLinks\\(\\) should return string but returns string\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdate/BatchUpdateBasePlugin.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdate\\\\BatchUpdateDuplicateLinksPlugin\\:\\:updateRecord\\(\\) should return string but returns string\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdate/BatchUpdateDuplicateLinksPlugin.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdate\\\\BatchUpdateMarriedNamesPlugin\\:\\:updateRecord\\(\\) should return string but returns string\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdate/BatchUpdateMarriedNamesPlugin.php
-
-		-
-			message: "#^Cannot call method gedcom\\(\\) on Fisharebest\\\\Webtrees\\\\Family\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdate/BatchUpdateMarriedNamesPlugin.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdate\\\\BatchUpdateNameFormatPlugin\\:\\:updateRecord\\(\\) should return string but returns string\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdate/BatchUpdateNameFormatPlugin.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdate\\\\BatchUpdateSearchReplacePlugin\\:\\:updateRecord\\(\\) should return string but returns string\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdate/BatchUpdateSearchReplacePlugin.php
-
-		-
-			message: "#^Argument of an invalid type array\\<int, string\\>\\|false supplied for foreach, only iterables are supported\\.$#"
-			count: 1
-			path: app/Module/BatchUpdateModule.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdateModule\\:\\:getRecord\\(\\) should return Fisharebest\\\\Webtrees\\\\GedcomRecord but returns Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdateModule.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdateModule\\:\\:getRecord\\(\\) should return Fisharebest\\\\Webtrees\\\\GedcomRecord but returns Fisharebest\\\\Webtrees\\\\Family\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdateModule.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdateModule\\:\\:getRecord\\(\\) should return Fisharebest\\\\Webtrees\\\\GedcomRecord but returns Fisharebest\\\\Webtrees\\\\Source\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdateModule.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdateModule\\:\\:getRecord\\(\\) should return Fisharebest\\\\Webtrees\\\\GedcomRecord but returns Fisharebest\\\\Webtrees\\\\Repository\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdateModule.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdateModule\\:\\:getRecord\\(\\) should return Fisharebest\\\\Webtrees\\\\GedcomRecord but returns Fisharebest\\\\Webtrees\\\\Media\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdateModule.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdateModule\\:\\:getRecord\\(\\) should return Fisharebest\\\\Webtrees\\\\GedcomRecord but returns Fisharebest\\\\Webtrees\\\\Submitter\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdateModule.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdateModule\\:\\:getRecord\\(\\) should return Fisharebest\\\\Webtrees\\\\GedcomRecord but returns Fisharebest\\\\Webtrees\\\\Note\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdateModule.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdateModule\\:\\:getRecord\\(\\) should return Fisharebest\\\\Webtrees\\\\GedcomRecord but returns Fisharebest\\\\Webtrees\\\\GedcomRecord\\|null\\.$#"
-			count: 1
-			path: app/Module/BatchUpdateModule.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdateModule\\:\\:findNextXref\\(\\) has parameter \\$all_data with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Module/BatchUpdateModule.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\BatchUpdateModule\\:\\:findPrevXref\\(\\) has parameter \\$all_data with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Module/BatchUpdateModule.php
-
-		-
 			message: "#^Cannot call method updateFact\\(\\) on Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
 			count: 1
 			path: app/Module/CensusAssistantModule.php
 
 		-
-			message: "#^Parameter \\#1 \\$xref of static method Fisharebest\\\\Webtrees\\\\GedcomRecord\\:\\:getInstance\\(\\) expects string, int\\|string given\\.$#"
+			message: "#^Parameter \\#1 \\$fp of function stream_get_meta_data expects resource, resource\\|false given\\.$#"
 			count: 1
 			path: app/Module/ClippingsCartModule.php
 
 		-
-			message: "#^Ternary operator condition is always false\\.$#"
+			message: "#^Parameter \\#2 \\$resource of method League\\\\Flysystem\\\\Filesystem\\:\\:writeStream\\(\\) expects resource, resource\\|false given\\.$#"
 			count: 1
 			path: app/Module/ClippingsCartModule.php
 
@@ -1386,6 +725,11 @@ parameters:
 			path: app/Module/FanChartModule.php
 
 		-
+			message: "#^Parameter \\#2 \\$col of function imagecolortransparent expects int, int\\|false given\\.$#"
+			count: 1
+			path: app/Module/FanChartModule.php
+
+		-
 			message: "#^Parameter \\#1 \\$image of method Fisharebest\\\\Webtrees\\\\Module\\\\FanChartModule\\:\\:imageColor\\(\\) expects resource, resource\\|false given\\.$#"
 			count: 4
 			path: app/Module/FanChartModule.php
@@ -1397,6 +741,11 @@ parameters:
 
 		-
 			message: "#^Parameter \\#1 \\$im of function imagefilledrectangle expects resource, resource\\|false given\\.$#"
+			count: 1
+			path: app/Module/FanChartModule.php
+
+		-
+			message: "#^Parameter \\#6 \\$col of function imagefilledrectangle expects int, int\\|false given\\.$#"
 			count: 1
 			path: app/Module/FanChartModule.php
 
@@ -1426,9 +775,59 @@ parameters:
 			path: app/Module/FanChartModule.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FanChartModule\\:\\:styles\\(\\) return type has no value type specified in iterable type array\\.$#"
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FanChartModule\\:\\:imageColor\\(\\) should return int but returns int\\|false\\.$#"
 			count: 1
 			path: app/Module/FanChartModule.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixDuplicateLinks\\:\\:updateGedcom\\(\\) should return string but returns string\\|null\\.$#"
+			count: 1
+			path: app/Module/FixDuplicateLinks.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixDuplicateLinks\\:\\:mergePendingRecords\\(\\) should return Illuminate\\\\Support\\\\Collection&iterable\\<stdClass\\> but returns Illuminate\\\\Support\\\\Collection&iterable\\<string\\>\\.$#"
+			count: 1
+			path: app/Module/FixDuplicateLinks.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixMissingMarriedNames\\:\\:updateGedcom\\(\\) should return string but returns string\\|null\\.$#"
+			count: 1
+			path: app/Module/FixMissingMarriedNames.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixMissingMarriedNames\\:\\:mergePendingRecords\\(\\) should return Illuminate\\\\Support\\\\Collection&iterable\\<stdClass\\> but returns Illuminate\\\\Support\\\\Collection&iterable\\<string\\>\\.$#"
+			count: 1
+			path: app/Module/FixMissingMarriedNames.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixNameSlashesAndSpaces\\:\\:updateGedcom\\(\\) should return string but returns string\\|null\\.$#"
+			count: 1
+			path: app/Module/FixNameSlashesAndSpaces.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixNameSlashesAndSpaces\\:\\:mergePendingRecords\\(\\) should return Illuminate\\\\Support\\\\Collection&iterable\\<stdClass\\> but returns Illuminate\\\\Support\\\\Collection&iterable\\<string\\>\\.$#"
+			count: 1
+			path: app/Module/FixNameSlashesAndSpaces.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixPlaceNames\\:\\:updateGedcom\\(\\) should return string but returns string\\|null\\.$#"
+			count: 1
+			path: app/Module/FixPlaceNames.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixPlaceNames\\:\\:mergePendingRecords\\(\\) should return Illuminate\\\\Support\\\\Collection&iterable\\<stdClass\\> but returns Illuminate\\\\Support\\\\Collection&iterable\\<string\\>\\.$#"
+			count: 1
+			path: app/Module/FixPlaceNames.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixSearchAndReplace\\:\\:updateGedcom\\(\\) should return string but returns string\\|null\\.$#"
+			count: 1
+			path: app/Module/FixSearchAndReplace.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixSearchAndReplace\\:\\:mergePendingRecords\\(\\) should return Illuminate\\\\Support\\\\Collection&iterable\\<stdClass\\> but returns Illuminate\\\\Support\\\\Collection&iterable\\<string\\>\\.$#"
+			count: 1
+			path: app/Module/FixSearchAndReplace.php
 
 		-
 			message: "#^Access to an undefined property object\\:\\:\\$block_order\\.$#"
@@ -1441,6 +840,21 @@ parameters:
 			path: app/Module/FrequentlyAskedQuestionsModule.php
 
 		-
+			message: "#^Parameter \\#3 \\$subject of function preg_replace expects array\\|string, string\\|null given\\.$#"
+			count: 1
+			path: app/Module/IndividualFactsTabModule.php
+
+		-
+			message: "#^Parameter \\#1 \\$gedcom of class Fisharebest\\\\Webtrees\\\\Fact constructor expects string, string\\|null given\\.$#"
+			count: 1
+			path: app/Module/IndividualFactsTabModule.php
+
+		-
+			message: "#^Call to an undefined method Fisharebest\\\\Webtrees\\\\GedcomRecord\\:\\:sex\\(\\)\\.$#"
+			count: 17
+			path: app/Module/IndividualFactsTabModule.php
+
+		-
 			message: "#^Variable \\$associates in PHPDoc tag @var does not match assigned variable \\$asso1\\.$#"
 			count: 1
 			path: app/Module/IndividualFactsTabModule.php
@@ -1449,6 +863,11 @@ parameters:
 			message: "#^Instanceof between Fisharebest\\\\Webtrees\\\\Individual and Fisharebest\\\\Webtrees\\\\Family will always evaluate to false\\.$#"
 			count: 1
 			path: app/Module/IndividualFactsTabModule.php
+
+		-
+			message: "#^Parameter \\#2 \\$key of method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:pluck\\(\\) expects string\\|null, Illuminate\\\\Database\\\\Query\\\\Expression given\\.$#"
+			count: 2
+			path: app/Module/IndividualListModule.php
 
 		-
 			message: "#^Parameter \\#1 \\$str of function strip_tags expects string, string\\|false given\\.$#"
@@ -1481,59 +900,19 @@ parameters:
 			path: app/Module/LifespansChartModule.php
 
 		-
-			message: "#^Binary operation \"\\+\" between array\\('tree' \\=\\> string, 'module' \\=\\> string, 'action' \\=\\> 'List'\\) and array\\|object\\|null results in an error\\.$#"
-			count: 1
-			path: app/Module/MediaListModule.php
-
-		-
-			message: "#^Property Fisharebest\\\\Webtrees\\\\Module\\\\MediaTabModule\\:\\:\\$facts type has no value type specified in iterable type Illuminate\\\\Support\\\\Collection\\.$#"
-			count: 1
-			path: app/Module/MediaTabModule.php
-
-		-
-			message: "#^Negated boolean expression is always false\\.$#"
-			count: 1
-			path: app/Module/MediaTabModule.php
-
-		-
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\ModuleBlockInterface\\:\\:getBlock\\(\\) has parameter \\$config with no value type specified in iterable type array\\.$#"
 			count: 1
 			path: app/Module/ModuleBlockInterface.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\RecentChangesModule\\:\\:getBlock\\(\\) has parameter \\$config with no value type specified in iterable type array\\.$#"
-			count: 2
-			path: app/Module/RecentChangesModule.php
+			message: "#^Parameter \\#1 \\$string of function strlen expects string, string\\|false given\\.$#"
+			count: 1
+			path: modules_v4/example.disable/module.php
 
 		-
 			message: "#^Parameter \\#1 \\$string of function strlen expects string, string\\|false given\\.$#"
 			count: 1
 			path: modules_v4/example-theme.disable/module.php
-
-		-
-			message: "#^Parameter \\#3 \\$headers of function response expects array\\<string\\>, array\\<string, int\\|string\\> given\\.$#"
-			count: 1
-			path: modules_v4/example-theme.disable/module.php
-
-		-
-			message: "#^Method class@anonymous/modules_v4/example\\-theme\\.disable/module\\.php\\:17\\:\\:stylesheets\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: modules_v4/example-theme.disable/module.php
-
-		-
-			message: "#^Parameter \\#1 \\$string of function strlen expects string, string\\|false given\\.$#"
-			count: 1
-			path: modules_v4/example-middleware.disable/module.php
-
-		-
-			message: "#^Parameter \\#3 \\$headers of function response expects array\\<string\\>, array\\<string, int\\|string\\> given\\.$#"
-			count: 1
-			path: modules_v4/example-middleware.disable/module.php
-
-		-
-			message: "#^Binary operation \"\\-\" between 32 and string results in an error\\.$#"
-			count: 1
-			path: modules_v4/example-middleware.disable/module.php
 
 		-
 			message: "#^Parameter \\#1 \\$string of function strlen expects string, string\\|false given\\.$#"
@@ -1541,37 +920,12 @@ parameters:
 			path: modules_v4/example-report.disable/module.php
 
 		-
-			message: "#^Parameter \\#3 \\$headers of function response expects array\\<string\\>, array\\<string, int\\|string\\> given\\.$#"
+			message: "#^Parameter \\#1 \\$string of function strlen expects string, string\\|false given\\.$#"
 			count: 1
-			path: modules_v4/example-report.disable/module.php
+			path: modules_v4/example-middleware.disable/module.php
 
 		-
 			message: "#^Parameter \\#1 \\$string of function strlen expects string, string\\|false given\\.$#"
-			count: 1
-			path: modules_v4/example.disable/module.php
-
-		-
-			message: "#^Parameter \\#3 \\$headers of function response expects array\\<string\\>, array\\<string, int\\|string\\> given\\.$#"
-			count: 1
-			path: modules_v4/example.disable/module.php
-
-		-
-			message: "#^Method class@anonymous/modules_v4/example\\.disable/module\\.php\\:17\\:\\:englishTranslations\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: modules_v4/example.disable/module.php
-
-		-
-			message: "#^Method class@anonymous/modules_v4/example\\.disable/module\\.php\\:17\\:\\:frenchTranslations\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: modules_v4/example.disable/module.php
-
-		-
-			message: "#^Parameter \\#1 \\$string of function strlen expects string, string\\|false given\\.$#"
-			count: 1
-			path: modules_v4/example-footer.disable/module.php
-
-		-
-			message: "#^Parameter \\#3 \\$headers of function response expects array\\<string\\>, array\\<string, int\\|string\\> given\\.$#"
 			count: 1
 			path: modules_v4/example-footer.disable/module.php
 
@@ -1581,9 +935,24 @@ parameters:
 			path: modules_v4/example-server-configuration.disable/ExampleServerConfigurationModule.php
 
 		-
-			message: "#^Parameter \\#3 \\$headers of function response expects array\\<string\\>, array\\<string, int\\|string\\> given\\.$#"
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixCemeteryTag\\:\\:mergePendingRecords\\(\\) should return Illuminate\\\\Support\\\\Collection&iterable\\<stdClass\\> but returns Illuminate\\\\Support\\\\Collection&iterable\\<string\\>\\.$#"
 			count: 1
-			path: modules_v4/example-server-configuration.disable/ExampleServerConfigurationModule.php
+			path: app/Module/FixCemeteryTag.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixMissingDeaths\\:\\:mergePendingRecords\\(\\) should return Illuminate\\\\Support\\\\Collection&iterable\\<stdClass\\> but returns Illuminate\\\\Support\\\\Collection&iterable\\<string\\>\\.$#"
+			count: 1
+			path: app/Module/FixMissingDeaths.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixNameTags\\:\\:mergePendingRecords\\(\\) should return Illuminate\\\\Support\\\\Collection&iterable\\<stdClass\\> but returns Illuminate\\\\Support\\\\Collection&iterable\\<string\\>\\.$#"
+			count: 1
+			path: app/Module/FixNameTags.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\FixPrimaryTag\\:\\:mergePendingRecords\\(\\) should return Illuminate\\\\Support\\\\Collection&iterable\\<stdClass\\> but returns Illuminate\\\\Support\\\\Collection&iterable\\<string\\>\\.$#"
+			count: 1
+			path: app/Module/FixPrimaryTag.php
 
 		-
 			message: "#^Parameter \\#2 \\$haystack of function in_array expects array, array\\<int, string\\>\\|false given\\.$#"
@@ -1596,12 +965,12 @@ parameters:
 			path: app/Module/CloudsTheme.php
 
 		-
-			message: "#^Cannot assign offset mixed to array\\<int, string\\>\\|false\\.$#"
+			message: "#^Cannot access offset mixed on \\(array\\<int, string\\>&nonEmpty\\)\\|false\\.$#"
 			count: 1
 			path: app/Module/CloudsTheme.php
 
 		-
-			message: "#^Cannot assign offset int\\|false\\|null to array\\<int, string\\>\\|false\\.$#"
+			message: "#^Cannot access offset int\\|false\\|null on array\\<int, string\\>\\|false\\.$#"
 			count: 1
 			path: app/Module/CloudsTheme.php
 
@@ -1621,12 +990,12 @@ parameters:
 			path: app/Module/FabTheme.php
 
 		-
-			message: "#^Cannot assign offset mixed to array\\<int, string\\>\\|false\\.$#"
+			message: "#^Cannot access offset mixed on \\(array\\<int, string\\>&nonEmpty\\)\\|false\\.$#"
 			count: 1
 			path: app/Module/FabTheme.php
 
 		-
-			message: "#^Cannot assign offset int\\|false\\|null to array\\<int, string\\>\\|false\\.$#"
+			message: "#^Cannot access offset int\\|false\\|null on array\\<int, string\\>\\|false\\.$#"
 			count: 1
 			path: app/Module/FabTheme.php
 
@@ -1646,12 +1015,12 @@ parameters:
 			path: app/Module/MinimalTheme.php
 
 		-
-			message: "#^Cannot assign offset mixed to array\\<int, string\\>\\|false\\.$#"
+			message: "#^Cannot access offset mixed on \\(array\\<int, string\\>&nonEmpty\\)\\|false\\.$#"
 			count: 1
 			path: app/Module/MinimalTheme.php
 
 		-
-			message: "#^Cannot assign offset int\\|false\\|null to array\\<int, string\\>\\|false\\.$#"
+			message: "#^Cannot access offset int\\|false\\|null on array\\<int, string\\>\\|false\\.$#"
 			count: 1
 			path: app/Module/MinimalTheme.php
 
@@ -1671,12 +1040,12 @@ parameters:
 			path: app/Module/WebtreesTheme.php
 
 		-
-			message: "#^Cannot assign offset mixed to array\\<int, string\\>\\|false\\.$#"
+			message: "#^Cannot access offset mixed on \\(array\\<int, string\\>&nonEmpty\\)\\|false\\.$#"
 			count: 1
 			path: app/Module/WebtreesTheme.php
 
 		-
-			message: "#^Cannot assign offset int\\|false\\|null to array\\<int, string\\>\\|false\\.$#"
+			message: "#^Cannot access offset int\\|false\\|null on array\\<int, string\\>\\|false\\.$#"
 			count: 1
 			path: app/Module/WebtreesTheme.php
 
@@ -1696,12 +1065,12 @@ parameters:
 			path: app/Module/XeneaTheme.php
 
 		-
-			message: "#^Cannot assign offset mixed to array\\<int, string\\>\\|false\\.$#"
+			message: "#^Cannot access offset mixed on \\(array\\<int, string\\>&nonEmpty\\)\\|false\\.$#"
 			count: 1
 			path: app/Module/XeneaTheme.php
 
 		-
-			message: "#^Cannot assign offset int\\|false\\|null to array\\<int, string\\>\\|false\\.$#"
+			message: "#^Cannot access offset int\\|false\\|null on array\\<int, string\\>\\|false\\.$#"
 			count: 1
 			path: app/Module/XeneaTheme.php
 
@@ -1716,22 +1085,7 @@ parameters:
 			path: app/Module/NotesTabModule.php
 
 		-
-			message: "#^Parameter \\#1 \\$individual of method Fisharebest\\\\Webtrees\\\\Module\\\\PedigreeMapModule\\:\\:summaryData\\(\\) expects Fisharebest\\\\Webtrees\\\\Individual, Fisharebest\\\\Webtrees\\\\Individual\\|null given\\.$#"
-			count: 1
-			path: app/Module/PedigreeMapModule.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\PedigreeMapModule\\:\\:getPedigreeMapFacts\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Module/PedigreeMapModule.php
-
-		-
 			message: "#^Parameter \\#1 \\$individual of method Fisharebest\\\\Webtrees\\\\Services\\\\ChartService\\:\\:sosaStradonitzAncestors\\(\\) expects Fisharebest\\\\Webtrees\\\\Individual, Fisharebest\\\\Webtrees\\\\Individual\\|null given\\.$#"
-			count: 1
-			path: app/Module/PedigreeMapModule.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\PedigreeMapModule\\:\\:summaryData\\(\\) return type has no value type specified in iterable type array\\.$#"
 			count: 1
 			path: app/Module/PedigreeMapModule.php
 
@@ -1741,19 +1095,14 @@ parameters:
 			path: app/Module/PrivacyPolicy.php
 
 		-
-			message: "#^Binary operation \"\\-\" between int\\<3, max\\>\\|string and 2 results in an error\\.$#"
-			count: 2
-			path: app/Module/RelationshipsChartModule.php
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\RecentChangesModule\\:\\:getBlock\\(\\) has parameter \\$config with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Module/RecentChangesModule.php
 
 		-
-			message: "#^Binary operation \"\\+\" between int\\<3, max\\>\\|string and 1 results in an error\\.$#"
-			count: 2
-			path: app/Module/RelationshipsChartModule.php
-
-		-
-			message: "#^Binary operation \"\\-\" between int\\<3, max\\>\\|string and 1 results in an error\\.$#"
-			count: 2
-			path: app/Module/RelationshipsChartModule.php
+			message: "#^Cannot call method local\\(\\) on Fisharebest\\\\Webtrees\\\\Carbon\\|false\\.$#"
+			count: 1
+			path: app/Module/RecentChangesModule.php
 
 		-
 			message: "#^Cannot call method gedcom\\(\\) on Fisharebest\\\\Webtrees\\\\Family\\|null\\.$#"
@@ -1791,6 +1140,11 @@ parameters:
 			path: app/Module/SourcesTabModule.php
 
 		-
+			message: "#^Argument of an invalid type array\\|string supplied for foreach, only iterables are supported\\.$#"
+			count: 3
+			path: app/Module/StatisticsChartModule.php
+
+		-
 			message: "#^Unreachable statement \\- code above always terminates\\.$#"
 			count: 1
 			path: app/Module/StatisticsChartModule.php
@@ -1798,11 +1152,6 @@ parameters:
 		-
 			message: "#^Binary operation \"\\-\" between string and 1 results in an error\\.$#"
 			count: 2
-			path: app/Module/StatisticsChartModule.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Module\\\\StatisticsChartModule\\:\\:axisNumbers\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
 			path: app/Module/StatisticsChartModule.php
 
 		-
@@ -1841,7 +1190,22 @@ parameters:
 			path: app/Module/UserJournalModule.php
 
 		-
+			message: "#^Cannot access property \\$latitude on object\\|null\\.$#"
+			count: 3
+			path: app/PlaceLocation.php
+
+		-
+			message: "#^Cannot access property \\$longitude on object\\|null\\.$#"
+			count: 3
+			path: app/PlaceLocation.php
+
+		-
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Report\\\\AbstractRenderer\\:\\:getStyle\\(\\) return type has no value type specified in iterable type array\\.$#"
+			count: 1
+			path: app/Report/AbstractRenderer.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Report\\\\AbstractRenderer\\:\\:getStyle\\(\\) should return array but returns array\\<string\\>\\|false\\.$#"
 			count: 1
 			path: app/Report/AbstractRenderer.php
 
@@ -1919,11 +1283,6 @@ parameters:
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Report\\\\ReportBaseLine\\:\\:getWidth\\(\\) return type has no value type specified in iterable type array\\.$#"
 			count: 1
 			path: app/Report/ReportBaseLine.php
-
-		-
-			message: "#^Default value of the parameter \\#2 \\$cellWidth \\(0\\) of method Fisharebest\\\\Webtrees\\\\Report\\\\ReportHtmlFootnote\\:\\:getFootnoteHeight\\(\\) is incompatible with type float\\.$#"
-			count: 1
-			path: app/Report/ReportHtmlFootnote.php
 
 		-
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Report\\\\ReportHtmlFootnote\\:\\:getWidth\\(\\) return type has no value type specified in iterable type array\\.$#"
@@ -2016,6 +1375,11 @@ parameters:
 			path: app/Report/ReportParserGenerate.php
 
 		-
+			message: "#^Call to function assert\\(\\) with false and LogicException will always evaluate to false\\.$#"
+			count: 1
+			path: app/Report/ReportParserGenerate.php
+
+		-
 			message: "#^Instanceof between Fisharebest\\\\Webtrees\\\\Report\\\\AbstractRenderer and Fisharebest\\\\Webtrees\\\\Report\\\\ReportBaseElement will always evaluate to false\\.$#"
 			count: 1
 			path: app/Report/ReportParserGenerate.php
@@ -2036,23 +1400,13 @@ parameters:
 			path: app/Report/ReportParserGenerate.php
 
 		-
-			message: "#^Parameter \\#3 \\$subject of function preg_replace expects array\\|string, string\\|null given\\.$#"
-			count: 1
-			path: app/Report/ReportParserGenerate.php
-
-		-
 			message: "#^Parameter \\#1 \\$array_arg of function end expects array\\|object, array\\<int, string\\>\\|false given\\.$#"
 			count: 1
 			path: app/Report/ReportParserGenerate.php
 
 		-
-			message: "#^Cannot access offset \\(float\\|int\\) on array\\<int, string\\>\\|false\\.$#"
+			message: "#^Cannot access offset float\\|int on array\\<int, string\\>\\|false\\.$#"
 			count: 14
-			path: app/Report/ReportParserGenerate.php
-
-		-
-			message: "#^Property Fisharebest\\\\Webtrees\\\\Report\\\\ReportParserGenerate\\:\\:\\$parser \\(resource\\) does not accept resource\\|null\\.$#"
-			count: 4
 			path: app/Report/ReportParserGenerate.php
 
 		-
@@ -2096,11 +1450,6 @@ parameters:
 			path: app/Report/ReportParserGenerate.php
 
 		-
-			message: "#^Parameter \\#2 \\$subject of function preg_match expects string, int\\|string given\\.$#"
-			count: 1
-			path: app/Report/ReportParserGenerate.php
-
-		-
 			message: "#^Parameter \\#2 \\$subject of function preg_match expects string, string\\|null given\\.$#"
 			count: 1
 			path: app/Report/ReportParserGenerate.php
@@ -2121,22 +1470,22 @@ parameters:
 			path: app/Report/ReportParserGenerate.php
 
 		-
-			message: "#^Parameter \\#1 \\$haystack of function strpos expects string, string\\|null given\\.$#"
-			count: 1
-			path: app/Report/ReportParserGenerate.php
-
-		-
-			message: "#^Parameter \\#1 \\$xref of static method Fisharebest\\\\Webtrees\\\\Individual\\:\\:getInstance\\(\\) expects string, string\\|null given\\.$#"
-			count: 1
-			path: app/Report/ReportParserGenerate.php
-
-		-
 			message: "#^Cannot call method childFamilies\\(\\) on Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
 			count: 1
 			path: app/Report/ReportParserGenerate.php
 
 		-
 			message: "#^Binary operation \"\\+\" between string and 1 results in an error\\.$#"
+			count: 1
+			path: app/Report/ReportParserGenerate.php
+
+		-
+			message: "#^Parameter \\#1 \\$level of static method Fisharebest\\\\Webtrees\\\\Functions\\\\Functions\\:\\:getSubRecord\\(\\) expects int, float\\|int given\\.$#"
+			count: 1
+			path: app/Report/ReportParserGenerate.php
+
+		-
+			message: "#^Parameter \\#1 \\$nlevel of static method Fisharebest\\\\Webtrees\\\\Functions\\\\Functions\\:\\:getCont\\(\\) expects int, float\\|int given\\.$#"
 			count: 1
 			path: app/Report/ReportParserGenerate.php
 
@@ -2216,7 +1565,42 @@ parameters:
 			path: app/Report/TcpdfWrapper.php
 
 		-
-			message: "#^Cannot call method facts\\(\\) on Fisharebest\\\\Webtrees\\\\Family\\|Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
+			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Source but returns Fisharebest\\\\Webtrees\\\\Source\\|null\\.$#"
+			count: 1
+			path: app/Services/AdminService.php
+
+		-
+			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Individual but returns Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
+			count: 1
+			path: app/Services/AdminService.php
+
+		-
+			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Family but returns Fisharebest\\\\Webtrees\\\\Family\\|null\\.$#"
+			count: 1
+			path: app/Services/AdminService.php
+
+		-
+			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Media but returns Fisharebest\\\\Webtrees\\\\Media\\|null\\.$#"
+			count: 1
+			path: app/Services/AdminService.php
+
+		-
+			message: "#^Parameter \\#1 \\$fp of function fread expects resource, resource\\|false given\\.$#"
+			count: 1
+			path: app/Services/AdminService.php
+
+		-
+			message: "#^Parameter \\#1 \\$fp of function fclose expects resource, resource\\|false given\\.$#"
+			count: 1
+			path: app/Services/AdminService.php
+
+		-
+			message: "#^Parameter \\#2 \\$subject of function preg_match expects string, string\\|false given\\.$#"
+			count: 1
+			path: app/Services/AdminService.php
+
+		-
+			message: "#^Call to an undefined method Carbon\\\\CarbonImmutable\\:\\:julianDay\\(\\)\\.$#"
 			count: 2
 			path: app/Services/CalendarService.php
 
@@ -2227,8 +1611,13 @@ parameters:
 
 		-
 			message: "#^Access to an undefined property Fisharebest\\\\Webtrees\\\\Fact\\:\\:\\$jd\\.$#"
-			count: 3
+			count: 5
 			path: app/Services/CalendarService.php
+
+		-
+			message: "#^Cannot access offset mixed on array\\|object\\|null\\.$#"
+			count: 2
+			path: app/Services/CaptchaService.php
 
 		-
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\ClipboardService\\:\\:pastableFacts\\(\\) has parameter \\$exclude_types with no value type specified in iterable type Illuminate\\\\Support\\\\Collection\\.$#"
@@ -2239,11 +1628,6 @@ parameters:
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\ClipboardService\\:\\:pastableFactsOfType\\(\\) has parameter \\$types with no value type specified in iterable type Illuminate\\\\Support\\\\Collection\\.$#"
 			count: 1
 			path: app/Services/ClipboardService.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\DatatablesService\\:\\:handleCollection\\(\\) has parameter \\$collection with no value type specified in iterable type Illuminate\\\\Support\\\\Collection\\.$#"
-			count: 1
-			path: app/Services/DatatablesService.php
 
 		-
 			message: "#^Parameter \\#1 \\$column of method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:orderBy\\(\\) expects string, Illuminate\\\\Database\\\\Query\\\\Expression\\|string given\\.$#"
@@ -2259,6 +1643,11 @@ parameters:
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\EmailService\\:\\:localDomain\\(\\) should return string but returns string\\|false\\.$#"
 			count: 1
 			path: app/Services/EmailService.php
+
+		-
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\GedcomExportService\\:\\:convertMediaPath\\(\\) should return string but returns string\\|null\\.$#"
+			count: 1
+			path: app/Services/GedcomExportService.php
 
 		-
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\GedcomService\\:\\:readPlace\\(\\) should return array\\<string\\> but returns array\\<int, string\\>\\|false\\.$#"
@@ -2281,68 +1670,23 @@ parameters:
 			path: app/Services/HomePageService.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\HousekeepingService\\:\\:deleteOldWebtreesFiles\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/HousekeepingService.php
-
-		-
 			message: "#^Cannot access offset 'type' on array\\|false\\.$#"
 			count: 2
 			path: app/Services/HousekeepingService.php
 
 		-
-			message: "#^Cannot call method getAllNames\\(\\) on Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
+			message: "#^Access to an undefined property object\\:\\:\\$place\\.$#"
 			count: 1
-			path: app/Services/IndividualListService.php
+			path: app/Services/MapDataService.php
 
 		-
-			message: "#^Cannot call method setPrimaryName\\(\\) on Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
+			message: "#^Access to an undefined property object\\:\\:\\$parent_id\\.$#"
 			count: 1
-			path: app/Services/IndividualListService.php
-
-		-
-			message: "#^Cannot clone non\\-object variable \\$person of type Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
-			count: 1
-			path: app/Services/IndividualListService.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\IndividualListService\\:\\:individuals\\(\\) should return array\\<Fisharebest\\\\Webtrees\\\\Individual\\> but returns array\\<int, Fisharebest\\\\Webtrees\\\\Individual\\|null\\>\\.$#"
-			count: 1
-			path: app/Services/IndividualListService.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\LocalizationService\\:\\:alphabet\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/LocalizationService.php
+			path: app/Services/MapDataService.php
 
 		-
 			message: "#^Parameter \\#1 \\$size of method Fisharebest\\\\Webtrees\\\\Services\\\\MediaFileService\\:\\:parseIniFileSize\\(\\) expects string, string\\|false given\\.$#"
 			count: 2
-			path: app/Services/MediaFileService.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\MediaFileService\\:\\:mediaTypes\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/MediaFileService.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\MediaFileService\\:\\:unusedFiles\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/MediaFileService.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\MediaFileService\\:\\:unusedFiles\\(\\) should return array but returns array\\|false\\.$#"
-			count: 1
-			path: app/Services/MediaFileService.php
-
-		-
-			message: "#^Parameter \\#1 \\$haystack of function strpos expects string, array\\|string given\\.$#"
-			count: 1
-			path: app/Services/MediaFileService.php
-
-		-
-			message: "#^Binary operation \"\\.\" between string and array\\|string\\|null results in an error\\.$#"
-			count: 3
 			path: app/Services/MediaFileService.php
 
 		-
@@ -2351,8 +1695,13 @@ parameters:
 			path: app/Services/MediaFileService.php
 
 		-
-			message: "#^Parameter \\#2 \\$resource of method League\\\\Flysystem\\\\FilesystemInterface\\:\\:writeStream\\(\\) expects resource, resource\\|null given\\.$#"
+			message: "#^Parameter \\#2 \\$resource of method League\\\\Flysystem\\\\FilesystemInterface\\:\\:putStream\\(\\) expects resource, resource\\|null given\\.$#"
 			count: 1
+			path: app/Services/MediaFileService.php
+
+		-
+			message: "#^Parameter \\#1 \\$str of function trim expects string, string\\|null given\\.$#"
+			count: 2
 			path: app/Services/MediaFileService.php
 
 		-
@@ -2381,11 +1730,6 @@ parameters:
 			path: app/Services/SearchService.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\SearchService\\:\\:rawGedcomFilter\\(\\) has parameter \\$search_terms with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Services/SearchService.php
-
-		-
 			message: "#^Parameter \\#3 \\$subject of function preg_replace expects array\\|string, string\\|null given\\.$#"
 			count: 1
 			path: app/Services/SearchService.php
@@ -2396,52 +1740,12 @@ parameters:
 			path: app/Services/SearchService.php
 
 		-
-			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Family but returns Fisharebest\\\\Webtrees\\\\Family\\|null\\.$#"
-			count: 1
-			path: app/Services/SearchService.php
-
-		-
-			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Individual but returns Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
-			count: 1
-			path: app/Services/SearchService.php
-
-		-
-			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Media but returns Fisharebest\\\\Webtrees\\\\Media\\|null\\.$#"
-			count: 1
-			path: app/Services/SearchService.php
-
-		-
-			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Note but returns Fisharebest\\\\Webtrees\\\\Note\\|null\\.$#"
-			count: 1
-			path: app/Services/SearchService.php
-
-		-
-			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Repository but returns Fisharebest\\\\Webtrees\\\\Repository\\|null\\.$#"
-			count: 1
-			path: app/Services/SearchService.php
-
-		-
-			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\Source but returns Fisharebest\\\\Webtrees\\\\Source\\|null\\.$#"
-			count: 1
-			path: app/Services/SearchService.php
-
-		-
-			message: "#^Anonymous function should return Fisharebest\\\\Webtrees\\\\GedcomRecord but returns Fisharebest\\\\Webtrees\\\\GedcomRecord\\|null\\.$#"
-			count: 1
-			path: app/Services/SearchService.php
-
-		-
 			message: "#^Parameter \\#2 \\$str of function explode expects string, string\\|false given\\.$#"
 			count: 2
 			path: app/Services/ServerCheckService.php
 
 		-
 			message: "#^Parameter \\#1 \\$value of function e expects Illuminate\\\\Contracts\\\\Support\\\\Htmlable\\|string, string\\|false given\\.$#"
-			count: 1
-			path: app/Services/ServerCheckService.php
-
-		-
-			message: "#^Parameter \\#1 \\$value of static method Illuminate\\\\Support\\\\Str\\:\\:finish\\(\\) expects string, string\\|null given\\.$#"
 			count: 1
 			path: app/Services/ServerCheckService.php
 
@@ -2491,42 +1795,37 @@ parameters:
 			path: app/Services/UpgradeService.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\UpgradeService\\:\\:cleanFiles\\(\\) has parameter \\$files_to_keep with no value type specified in iterable type Illuminate\\\\Support\\\\Collection\\.$#"
+			message: "#^Property Fisharebest\\\\Webtrees\\\\SessionDatabaseHandler\\:\\:\\$row \\(stdClass\\|null\\) does not accept object\\|null\\.$#"
 			count: 1
-			path: app/Services/UpgradeService.php
+			path: app/SessionDatabaseHandler.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\UpgradeService\\:\\:cleanFiles\\(\\) has parameter \\$folders_to_clean with no value type specified in iterable type Illuminate\\\\Support\\\\Collection\\.$#"
+			message: "#^Access to an undefined property object\\:\\:\\$session_data\\.$#"
 			count: 1
-			path: app/Services/UpgradeService.php
+			path: app/SessionDatabaseHandler.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Services\\\\UpgradeService\\:\\:serverParameters\\(\\) return type has no value type specified in iterable type array\\.$#"
+			message: "#^Call to an undefined method ReflectionType\\:\\:getName\\(\\)\\.$#"
 			count: 1
-			path: app/Services/UpgradeService.php
+			path: app/Statistics.php
 
 		-
-			message: "#^Parameter \\#2 \\$str of function explode expects string, string\\|false given\\.$#"
-			count: 1
-			path: app/Session.php
+			message: "#^Parameter \\#1 \\$function of function call_user_func expects callable\\(\\)\\: mixed, array\\(\\$this\\(Fisharebest\\\\Webtrees\\\\Statistics\\), string\\) given\\.$#"
+			count: 2
+			path: app/Statistics.php
 
 		-
-			message: "#^Parameter \\#1 \\$lifetime\\|options of function session_set_cookie_params expects array\\<string, bool\\|int\\|string\\|null\\>\\|int, array\\<string, bool\\|int\\|string\\|null\\> given\\.$#"
+			message: "#^Parameter \\#1 \\.\\.\\.\\$params of method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\IndividualRepository\\:\\:totalSurnames\\(\\) expects string, array\\<string\\> given\\.$#"
 			count: 1
-			path: app/Session.php
+			path: app/Statistics.php
 
 		-
-			message: "#^Parameter \\#3 \\$domain of function session_set_cookie_params expects string\\|null, string\\|false\\|null given\\.$#"
+			message: "#^Parameter \\#1 \\.\\.\\.\\$params of method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\IndividualRepository\\:\\:totalGivennames\\(\\) expects string, array\\<string\\> given\\.$#"
 			count: 1
-			path: app/Session.php
+			path: app/Statistics.php
 
 		-
-			message: "#^Property Fisharebest\\\\Webtrees\\\\Site\\:\\:\\$preferences type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Site.php
-
-		-
-			message: "#^Parameter \\#1 \\$function of function call_user_func expects callable\\(\\)\\: mixed, array\\(\\$this\\(Fisharebest\\\\Webtrees\\\\Statistics\\), mixed\\) given\\.$#"
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\:\\:statsPlaces\\(\\) should return array\\<stdClass\\> but returns array\\<int\\|stdClass\\>\\.$#"
 			count: 1
 			path: app/Statistics.php
 
@@ -2546,29 +1845,14 @@ parameters:
 			path: app/Statistics.php
 
 		-
-			message: "#^Parameter \\#2 \\$method of function method_exists expects string, string\\|null given\\.$#"
+			message: "#^Parameter \\#1 \\$century of method Fisharebest\\\\Webtrees\\\\Statistics\\\\Service\\\\CenturyService\\:\\:centuryName\\(\\) expects int, int\\|string given\\.$#"
 			count: 1
-			path: app/Statistics.php
-
-		-
-			message: "#^Parameter \\#1 \\$function of function call_user_func expects callable\\(\\)\\: mixed, array\\(\\$this\\(Fisharebest\\\\Webtrees\\\\Statistics\\), string\\|null\\) given\\.$#"
-			count: 1
-			path: app/Statistics.php
+			path: app/Statistics/Google/ChartAge.php
 
 		-
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Google\\\\ChartCommonGiven\\:\\:chartCommonGiven\\(\\) has parameter \\$given with no value type specified in iterable type array\\.$#"
 			count: 1
 			path: app/Statistics/Google/ChartCommonGiven.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Google\\\\ChartCommonSurname\\:\\:getTopNameAndCount\\(\\) has parameter \\$surns with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Google/ChartCommonSurname.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Google\\\\ChartCommonSurname\\:\\:getTopNameAndCount\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Google/ChartCommonSurname.php
 
 		-
 			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Google\\\\ChartCommonSurname\\:\\:chartCommonSurnames\\(\\) has parameter \\$all_surnames with no value type specified in iterable type array\\.$#"
@@ -2621,57 +1905,17 @@ parameters:
 			path: app/Statistics/Google/ChartDistribution.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Google\\\\ChartMedia\\:\\:chartMedia\\(\\) has parameter \\$media with no value type specified in iterable type array\\.$#"
+			message: "#^Parameter \\#1 \\$century of method Fisharebest\\\\Webtrees\\\\Statistics\\\\Service\\\\CenturyService\\:\\:centuryName\\(\\) expects int, int\\|string given\\.$#"
 			count: 1
-			path: app/Statistics/Google/ChartMedia.php
+			path: app/Statistics/Google/ChartMarriageAge.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\EventRepository\\:\\:getEventCount\\(\\) has parameter \\$events with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Repository/EventRepository.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\EventRepository\\:\\:getCommonFacts\\(\\) return type has no value type specified in iterable type array\\.$#"
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\EventRepository\\:\\:eventQuery\\(\\) should return stdClass\\|null but returns object\\|null\\.$#"
 			count: 1
 			path: app/Statistics/Repository/EventRepository.php
 
 		-
-			message: "#^Access to an undefined property object\\:\\:\\$id\\.$#"
-			count: 3
-			path: app/Statistics/Repository/EventRepository.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$type\\.$#"
-			count: 1
-			path: app/Statistics/Repository/EventRepository.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$year\\.$#"
-			count: 1
-			path: app/Statistics/Repository/EventRepository.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$fact\\.$#"
-			count: 3
-			path: app/Statistics/Repository/EventRepository.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$id\\.$#"
-			count: 3
-			path: app/Statistics/Repository/FamilyDatesRepository.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$year\\.$#"
-			count: 1
-			path: app/Statistics/Repository/FamilyDatesRepository.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$type\\.$#"
-			count: 1
-			path: app/Statistics/Repository/FamilyDatesRepository.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$fact\\.$#"
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\FamilyDatesRepository\\:\\:eventQuery\\(\\) should return stdClass\\|null but returns object\\|null\\.$#"
 			count: 1
 			path: app/Statistics/Repository/FamilyDatesRepository.php
 
@@ -2681,27 +1925,12 @@ parameters:
 			path: app/Statistics/Repository/FamilyRepository.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\FamilyRepository\\:\\:topTenGrandFamilyQuery\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Repository/FamilyRepository.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\FamilyRepository\\:\\:ageBetweenSiblingsQuery\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Repository/FamilyRepository.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\FamilyRepository\\:\\:ageBetweenSiblingsNoList\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Repository/FamilyRepository.php
-
-		-
 			message: "#^Cannot call method canShow\\(\\) on Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
 			count: 8
 			path: app/Statistics/Repository/FamilyRepository.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\FamilyRepository\\:\\:ageBetweenSiblingsList\\(\\) return type has no value type specified in iterable type array\\.$#"
+			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\FamilyRepository\\:\\:ageBetweenSiblingsList\\(\\) should return array\\<string, array\\> but returns array\\<int, array\\<string, Fisharebest\\\\Webtrees\\\\Family\\|Fisharebest\\\\Webtrees\\\\Individual\\|string\\|null\\>\\>\\.$#"
 			count: 1
 			path: app/Statistics/Repository/FamilyRepository.php
 
@@ -2721,11 +1950,6 @@ parameters:
 			path: app/Statistics/Repository/FamilyRepository.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\FamilyRepository\\:\\:topTenFamilyQuery\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Repository/FamilyRepository.php
-
-		-
 			message: "#^Cannot call method formatList\\(\\) on Fisharebest\\\\Webtrees\\\\Family\\|null\\.$#"
 			count: 1
 			path: app/Statistics/Repository/FamilyRepository.php
@@ -2741,37 +1965,17 @@ parameters:
 			path: app/Statistics/Repository/FamilyRepository.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\FamilyRepository\\:\\:ageBetweenSpousesQuery\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Repository/FamilyRepository.php
-
-		-
 			message: "#^Cannot call method getBirthDate\\(\\) on Fisharebest\\\\Webtrees\\\\Individual\\|null\\.$#"
 			count: 2
 			path: app/Statistics/Repository/FamilyRepository.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\FamilyRepository\\:\\:statsMarrAgeQuery\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Repository/FamilyRepository.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between array\\<string\\> and null will always evaluate to false\\.$#"
-			count: 1
+			message: "#^Cannot call method local\\(\\) on Fisharebest\\\\Webtrees\\\\Carbon\\|null\\.$#"
+			count: 2
 			path: app/Statistics/Repository/GedcomRepository.php
 
 		-
-			message: "#^Access to an undefined property object\\:\\:\\$d_day\\.$#"
-			count: 1
-			path: app/Statistics/Repository/GedcomRepository.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$d_month\\.$#"
-			count: 1
-			path: app/Statistics/Repository/GedcomRepository.php
-
-		-
-			message: "#^Access to an undefined property object\\:\\:\\$d_year\\.$#"
+			message: "#^Access to an undefined property object\\:\\:\\$change_time\\.$#"
 			count: 1
 			path: app/Statistics/Repository/GedcomRepository.php
 
@@ -2876,7 +2080,7 @@ parameters:
 			path: app/Statistics/Repository/IndividualRepository.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\IndividualRepository\\:\\:statsAgeQuery\\(\\) return type has no value type specified in iterable type array\\.$#"
+			message: "#^Parameter \\#3 \\$value of method Illuminate\\\\Database\\\\Query\\\\Builder\\:\\:having\\(\\) expects string\\|null, int given\\.$#"
 			count: 1
 			path: app/Statistics/Repository/IndividualRepository.php
 
@@ -2886,39 +2090,9 @@ parameters:
 			path: app/Statistics/Repository/IndividualRepository.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\IndividualRepository\\:\\:topTenOldestQuery\\(\\) return type has no value type specified in iterable type array\\.$#"
+			message: "#^Parameter \\#2 \\$given of method Fisharebest\\\\Webtrees\\\\Statistics\\\\Google\\\\ChartCommonGiven\\:\\:chartCommonGiven\\(\\) expects array, array\\<int\\>\\|string given\\.$#"
 			count: 1
 			path: app/Statistics/Repository/IndividualRepository.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\IndividualRepository\\:\\:topTenOldestAliveQuery\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Repository/IndividualRepository.php
-
-		-
-			message: "#^Parameter \\#2 \\$given of method Fisharebest\\\\Webtrees\\\\Statistics\\\\Google\\\\ChartCommonGiven\\:\\:chartCommonGiven\\(\\) expects array, \\(array\\<int\\>\\)\\|string given\\.$#"
-			count: 1
-			path: app/Statistics/Repository/IndividualRepository.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\MediaRepository\\:\\:getSortedMediaTypeList\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Repository/MediaRepository.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\PlaceRepository\\:\\:getTop10Places\\(\\) has parameter \\$places with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Repository/PlaceRepository.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\PlaceRepository\\:\\:getTop10Places\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Repository/PlaceRepository.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Repository\\\\PlaceRepository\\:\\:renderTop10\\(\\) has parameter \\$places with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Repository/PlaceRepository.php
 
 		-
 			message: "#^Cannot access property \\$country on int\\|stdClass\\.$#"
@@ -2931,16 +2105,6 @@ parameters:
 			path: app/Statistics/Repository/PlaceRepository.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Service\\\\ColorService\\:\\:interpolateRgb\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Service/ColorService.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Statistics\\\\Service\\\\ColorService\\:\\:hexToRgb\\(\\) return type has no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/Statistics/Service/ColorService.php
-
-		-
 			message: "#^Parameter \\#3 \\$subject of function preg_replace expects array\\|string, string\\|null given\\.$#"
 			count: 1
 			path: app/SurnameTradition/PatrilinealSurnameTradition.php
@@ -2951,16 +2115,6 @@ parameters:
 			path: app/SurnameTradition/PatrilinealSurnameTradition.php
 
 		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\Tree\\:\\:createRecord\\(\\) should return Fisharebest\\\\Webtrees\\\\GedcomRecord but returns Fisharebest\\\\Webtrees\\\\GedcomRecord\\|null\\.$#"
-			count: 1
-			path: app/Tree.php
-
-		-
-			message: "#^Method Fisharebest\\\\Webtrees\\\\View\\:\\:__construct\\(\\) has parameter \\$data with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: app/View.php
-
-		-
 			message: "#^Method Fisharebest\\\\Webtrees\\\\View\\:\\:render\\(\\) should return string but returns string\\|false\\.$#"
 			count: 1
 			path: app/View.php
@@ -2969,19 +2123,4 @@ parameters:
 			message: "#^Ternary operator condition is always true\\.$#"
 			count: 1
 			path: app/Webtrees.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between 'dev' and '' will always evaluate to false\\.$#"
-			count: 1
-			path: app/Webtrees.php
-
-		-
-			message: "#^Parameter \\#1 \\$filename of function file_exists expects string, string\\|false\\|null given\\.$#"
-			count: 1
-			path: index.php
-
-		-
-			message: "#^Parameter \\#1 \\$middleware of class Middleland\\\\Dispatcher constructor expects array\\<Psr\\\\Http\\\\Server\\\\MiddlewareInterface\\>, array\\<string\\> given\\.$#"
-			count: 1
-			path: index.php
 

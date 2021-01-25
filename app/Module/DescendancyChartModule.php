@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -22,6 +22,7 @@ namespace Fisharebest\Webtrees\Module;
 use Aura\Router\RouterContainer;
 use Fig\Http\Message\RequestMethodInterface;
 use Fisharebest\Webtrees\Auth;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Menu;
@@ -45,8 +46,7 @@ class DescendancyChartModule extends AbstractModule implements ModuleChartInterf
 {
     use ModuleChartTrait;
 
-    private const ROUTE_NAME = 'descendancy-chart';
-    private const ROUTE_URL  = '/tree/{tree}/descendants-{style}-{generations}/{xref}';
+    protected const ROUTE_URL  = '/tree/{tree}/descendants-{style}-{generations}/{xref}';
 
     // Chart styles
     public const CHART_STYLE_TREE        = 'tree';
@@ -89,7 +89,7 @@ class DescendancyChartModule extends AbstractModule implements ModuleChartInterf
         assert($router_container instanceof RouterContainer);
 
         $router_container->getMap()
-            ->get(self::ROUTE_NAME, self::ROUTE_URL, $this)
+            ->get(static::class, static::ROUTE_URL, $this)
             ->allows(RequestMethodInterface::METHOD_POST)
             ->tokens([
                 'generations' => '\d+',
@@ -164,7 +164,7 @@ class DescendancyChartModule extends AbstractModule implements ModuleChartInterf
      */
     public function chartUrl(Individual $individual, array $parameters = []): string
     {
-        return route(self::ROUTE_NAME, [
+        return route(static::class, [
                 'tree' => $individual->tree()->name(),
                 'xref' => $individual->xref(),
             ] + $parameters + self::DEFAULT_PARAMETERS);
@@ -183,7 +183,7 @@ class DescendancyChartModule extends AbstractModule implements ModuleChartInterf
         $xref = $request->getAttribute('xref');
         assert(is_string($xref));
 
-        $individual = Individual::getInstance($xref, $tree);
+        $individual = Registry::individualFactory()->make($xref, $tree);
         $individual = Auth::checkIndividualAccess($individual, false, true);
 
         $user        = $request->getAttribute('user');
@@ -195,7 +195,7 @@ class DescendancyChartModule extends AbstractModule implements ModuleChartInterf
         if ($request->getMethod() === RequestMethodInterface::METHOD_POST) {
             $params = (array) $request->getParsedBody();
 
-            return redirect(route(self::ROUTE_NAME, [
+            return redirect(route(static::class, [
                 'tree'        => $tree->name(),
                 'xref'        => $params['xref'],
                 'style'       => $params['style'],
@@ -203,7 +203,7 @@ class DescendancyChartModule extends AbstractModule implements ModuleChartInterf
             ]));
         }
 
-        Auth::checkComponentAccess($this, 'chart', $tree, $user);
+        Auth::checkComponentAccess($this, ModuleChartInterface::class, $tree, $user);
 
         $generations = min($generations, self::MAXIMUM_GENERATIONS);
         $generations = max($generations, self::MINIMUM_GENERATIONS);

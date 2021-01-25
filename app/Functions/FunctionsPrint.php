@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace Fisharebest\Webtrees\Functions;
 
+use Fisharebest\Webtrees\Age;
 use Fisharebest\Webtrees\Date;
 use Fisharebest\Webtrees\Fact;
 use Fisharebest\Webtrees\Family;
@@ -28,19 +29,51 @@ use Fisharebest\Webtrees\GedcomCode\GedcomCodeStat;
 use Fisharebest\Webtrees\GedcomCode\GedcomCodeTemp;
 use Fisharebest\Webtrees\GedcomRecord;
 use Fisharebest\Webtrees\GedcomTag;
+use Fisharebest\Webtrees\Header;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
+use Fisharebest\Webtrees\Media;
 use Fisharebest\Webtrees\Note;
 use Fisharebest\Webtrees\Place;
+use Fisharebest\Webtrees\Registry;
+use Fisharebest\Webtrees\Repository;
+use Fisharebest\Webtrees\Source;
+use Fisharebest\Webtrees\Submission;
+use Fisharebest\Webtrees\Submitter;
 use Fisharebest\Webtrees\Tree;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use LogicException;
 use Ramsey\Uuid\Uuid;
 
+use function array_filter;
+use function array_intersect;
+use function array_merge;
+use function array_search;
+use function e;
+use function explode;
+use function in_array;
+use function preg_match;
+use function preg_match_all;
+use function preg_replace_callback;
+use function preg_split;
+use function str_contains;
+use function strip_tags;
+use function strlen;
+use function strpos;
+use function strtoupper;
+use function substr;
+use function trim;
+use function uasort;
 use function view;
+
+use const PREG_SET_ORDER;
+use const PREG_SPLIT_NO_EMPTY;
 
 /**
  * Class FunctionsPrint - common functions
+ *
+ * @deprecated since 2.0.6.  Will be removed in 2.1.0
  */
 class FunctionsPrint
 {
@@ -58,50 +91,59 @@ class FunctionsPrint
     {
         $text .= Functions::getCont($nlevel, $nrec);
 
-        // Check if shared note (we have already checked that it exists)
         if (preg_match('/^0 @(' . Gedcom::REGEX_XREF . ')@ NOTE/', $nrec, $match)) {
-            $note  = Note::getInstance($match[1], $tree);
-            $label = 'SHARED_NOTE';
-            $html  = Filter::formatText($note->getNote(), $tree);
-        } else {
-            $note  = null;
-            $label = 'NOTE';
-            $html  = Filter::formatText($text, $tree);
-        }
+            // Shared note.
+            $note = Registry::noteFactory()->make($match[1], $tree);
+            // It must exist.
+            assert($note instanceof Note);
 
-        if (strpos($text, "\n") === false) {
-            // A one-line note? strip the block-level tags, so it displays inline
-            return GedcomTag::getLabelValue($label, strip_tags($html, '<a><strong><em>'));
-        }
-
-        if ($tree->getPreference('EXPAND_NOTES')) {
-            // A multi-line note, and we're expanding notes by default
-            return GedcomTag::getLabelValue($label, $html);
-        }
-
-        // A multi-line note, with an expand/collapse option
-        $element_id = Uuid::uuid4()->toString();
-        // NOTE: class "note-details" is (currently) used only by some third-party themes
-        if ($note) {
+            $label      = I18N::translate('Shared note');
+            $html       = Filter::formatText($note->getNote(), $tree);
             $first_line = '<a href="' . e($note->url()) . '">' . $note->fullName() . '</a>';
         } else {
-            [$text] = explode("\n", strip_tags($html));
-            $first_line = Str::limit($text, 100, I18N::translate('…'));
+            // Inline note.
+            $label = I18N::translate('Note');
+            $html  = Filter::formatText($text, $tree);
+
+            // Only one line?  Remove block-level attributes and skip expand/collapse.
+            if (!str_contains($text, "\n")) {
+                return
+                    '<div class="fact_NOTE">' .
+                    I18N::translate(
+                        '<span class="label">%1$s:</span> <span class="field" dir="auto">%2$s</span>',
+                        $label,
+                        strip_tags($html, '<a><strong><em>')
+                    ) .
+                    '</div>';
+            }
+
+            [$text] = explode("\n", strip_tags($text));
+            $first_line = Str::limit($text, 50, I18N::translate('…'));
         }
 
+        $id       = 'collapse-' . Uuid::uuid4()->toString();
+        $expanded = (bool) $tree->getPreference('EXPAND_NOTES');
+
         return
-            '<div class="fact_NOTE"><span class="label">' .
-            '<a href="#" onclick="expand_layer(\'' . $element_id . '\'); return false;"><i id="' . $element_id . '_img" class="icon-plus"></i></a> ' . GedcomTag::getLabel($label) . ':</span> ' . '<span id="' . $element_id . '-alt">' . $first_line . '</span>' .
+            '<div class="fact_NOTE">' .
+            '<a href="#' . e($id) . '" role="button" data-toggle="collapse" aria-controls="' . e($id) . '" aria-expanded="' . ($expanded ? 'true' : 'false') . '">' .
+            view('icons/expand') .
+            view('icons/collapse') .
+            '</a> ' .
+            '<span class="label">' . $label . ':</span> ' .
+            $first_line .
             '</div>' .
-            '<div class="note-details" id="' . $element_id . '" style="display:none">' . $html . '</div>';
+            '<div id="' . e($id) . '" class="collapse ' . ($expanded ? 'show' : '') . '">' .
+            $html .
+            '</div>';
     }
 
     /**
      * Print all of the notes in this fact record
      *
      * @param Tree   $tree
-     * @param string $factrec The factrecord to print the notes from
-     * @param int    $level   The level of the factrecord
+     * @param string $factrec The fact to print the notes from
+     * @param int    $level   The level of the notes
      *
      * @return string HTML
      */
@@ -125,12 +167,12 @@ class FunctionsPrint
             if (!preg_match('/^@(' . Gedcom::REGEX_XREF . ')@$/', $match[$j][1], $nmatch)) {
                 $data .= self::printNoteRecord($tree, $match[$j][1], $nlevel, $nrec);
             } else {
-                $note = Note::getInstance($nmatch[1], $tree);
+                $note = Registry::noteFactory()->make($nmatch[1], $tree);
                 if ($note) {
                     if ($note->canShow()) {
                         $noterec = $note->gedcom();
                         $nt      = preg_match("/0 @$nmatch[1]@ NOTE (.*)/", $noterec, $n1match);
-                        $data    .= self::printNoteRecord($tree, ($nt > 0) ? $n1match[1] : '', 1, $noterec);
+                        $data    .= self::printNoteRecord($tree, $nt > 0 ? $n1match[1] : '', 1, $noterec);
                     }
                 } else {
                     $data = '<div class="fact_NOTE"><span class="label">' . I18N::translate('Note') . '</span>: <span class="field error">' . $nmatch[1] . '</span></div>';
@@ -159,27 +201,27 @@ class FunctionsPrint
             foreach ($family->spouses() as $parent) {
                 if ($parent->getBirthDate()->isOK()) {
                     $sex      = '<small>' . view('icons/sex', ['sex' => $parent->sex()]) . '</small>';
-                    $age      = Date::getAge($parent->getBirthDate(), $birth_date);
+                    $age      = new Age($parent->getBirthDate(), $birth_date);
                     $deatdate = $parent->getDeathDate();
                     switch ($parent->sex()) {
                         case 'F':
                             // Highlight mothers who die in childbirth or shortly afterwards
                             if ($deatdate->isOK() && $deatdate->maximumJulianDay() < $birth_date->minimumJulianDay() + 90) {
-                                $html .= ' <span title="' . GedcomTag::getLabel('_DEAT_PARE', $parent) . '" class="parentdeath">' . $sex . $age . '</span>';
+                                $html .= ' <span title="' . I18N::translate('Death of a mother') . '" class="parentdeath">' . $sex . I18N::number($age->ageYears()) . '</span>';
                             } else {
-                                $html .= ' <span title="' . I18N::translate('Mother’s age') . '">' . $sex . $age . '</span>';
+                                $html .= ' <span title="' . I18N::translate('Mother’s age') . '">' . $sex . I18N::number($age->ageYears()) . '</span>';
                             }
                             break;
                         case 'M':
                             // Highlight fathers who die before the birth
                             if ($deatdate->isOK() && $deatdate->maximumJulianDay() < $birth_date->minimumJulianDay()) {
-                                $html .= ' <span title="' . GedcomTag::getLabel('_DEAT_PARE', $parent) . '" class="parentdeath">' . $sex . $age . '</span>';
+                                $html .= ' <span title="' . I18N::translate('Death of a father') . '" class="parentdeath">' . $sex . I18N::number($age->ageYears()) . '</span>';
                             } else {
-                                $html .= ' <span title="' . I18N::translate('Father’s age') . '">' . $sex . $age . '</span>';
+                                $html .= ' <span title="' . I18N::translate('Father’s age') . '">' . $sex . I18N::number($age->ageYears()) . '</span>';
                             }
                             break;
                         default:
-                            $html .= ' <span title="' . I18N::translate('Parent’s age') . '">' . $sex . $age . '</span>';
+                            $html .= ' <span title="' . I18N::translate('Parent’s age') . '">' . $sex . I18N::number($age->ageYears()) . '</span>';
                             break;
                     }
                 }
@@ -193,6 +235,48 @@ class FunctionsPrint
     }
 
     /**
+     * Convert a GEDCOM age string to localized text.
+     *
+     * @param string $age_string
+     *
+     * @return string
+     */
+    public static function formatGedcomAge(string $age_string): string
+    {
+        switch (strtoupper($age_string)) {
+            case 'CHILD':
+                return I18N::translate('Child');
+            case 'INFANT':
+                return I18N::translate('Infant');
+            case 'STILLBORN':
+                return I18N::translate('Stillborn');
+            default:
+                return (string) preg_replace_callback(
+                    [
+                        '/(\d+)([ymwd])/',
+                    ],
+                    static function (array $match): string {
+                        $num = (int) $match[1];
+
+                        switch ($match[2]) {
+                            case 'y':
+                                return I18N::plural('%s year', '%s years', $num, I18N::number($num));
+                            case 'm':
+                                return I18N::plural('%s month', '%s months', $num, I18N::number($num));
+                            case 'w':
+                                return I18N::plural('%s week', '%s weeks', $num, I18N::number($num));
+                            case 'd':
+                                return I18N::plural('%s day', '%s days', $num, I18N::number($num));
+                            default:
+                                throw new LogicException('Should never get here');
+                        }
+                    },
+                    $age_string
+                ) ;
+        }
+    }
+
+    /**
      * Print fact DATE/TIME
      *
      * @param Fact         $event  event containing the date/age
@@ -202,23 +286,23 @@ class FunctionsPrint
      *
      * @return string
      */
-    public static function formatFactDate(Fact $event, GedcomRecord $record, $anchor, $time): string
+    public static function formatFactDate(Fact $event, GedcomRecord $record, bool $anchor, bool $time): string
     {
         $factrec = $event->gedcom();
         $html    = '';
         // Recorded age
         if (preg_match('/\n2 AGE (.+)/', $factrec, $match)) {
-            $fact_age = $match[1];
+            $fact_age = self::formatGedcomAge($match[1]);
         } else {
             $fact_age = '';
         }
         if (preg_match('/\n2 HUSB\n3 AGE (.+)/', $factrec, $match)) {
-            $husb_age = $match[1];
+            $husb_age = self::formatGedcomAge($match[1]);
         } else {
             $husb_age = '';
         }
         if (preg_match('/\n2 WIFE\n3 AGE (.+)/', $factrec, $match)) {
-            $wife_age = $match[1];
+            $wife_age = self::formatGedcomAge($match[1]);
         } else {
             $wife_age = '';
         }
@@ -250,38 +334,54 @@ class FunctionsPrint
                         $death_date = new Date('');
                     }
                     $ageText = '';
-                    if ($fact === 'DEAT' || (Date::compare($date, $death_date) <= 0 || !$record->isDead())) {
+                    if ($fact === 'DEAT' || Date::compare($date, $death_date) <= 0 || !$record->isDead()) {
                         // Before death, print age
-                        $age = Date::getAgeGedcom($birth_date, $date);
+                        $age = (string) new Age($birth_date, $date);
+
                         // Only show calculated age if it differs from recorded age
-                        if ($age !== '' && $age !== '0d') {
-                            if ($fact_age !== '' && $fact_age !== $age) {
-                                $ageText = '(' . I18N::translate('Age') . ' ' . FunctionsDate::getAgeAtEvent($age) . ')';
-                            } elseif ($fact_age === '' && $husb_age === '' && $wife_age === '') {
-                                $ageText = '(' . I18N::translate('Age') . ' ' . FunctionsDate::getAgeAtEvent($age) . ')';
-                            } elseif ($husb_age !== '' && $husb_age !== $age && $record->sex() === 'M') {
-                                $ageText = '(' . I18N::translate('Age') . ' ' . FunctionsDate::getAgeAtEvent($age) . ')';
-                            } elseif ($wife_age !== '' && $wife_age !== $age && $record->sex() === 'F') {
-                                $ageText = '(' . I18N::translate('Age') . ' ' . FunctionsDate::getAgeAtEvent($age) . ')';
-                            }
-                        }
-                    }
-                    if ($fact !== 'DEAT' && Date::compare($date, $death_date) >= 0) {
-                        // After death, print time since death
-                        $age = FunctionsDate::getAgeAtEvent(Date::getAgeGedcom($death_date, $date));
                         if ($age !== '') {
-                            if (Date::getAgeGedcom($death_date, $date) === '0d') {
-                                $ageText = '(' . I18N::translate('on the date of death') . ')';
-                            } else {
-                                $ageText = '(' . $age . ' ' . I18N::translate('after death') . ')';
-                                // Family events which occur after death are probably errors
-                                if ($event->record() instanceof Family) {
-                                    $ageText .= view('icons/warning');
+                            if (
+                                $fact_age !== '' && $fact_age !== $age ||
+                                $fact_age === '' && $husb_age === '' && $wife_age === '' ||
+                                $husb_age !== '' && $husb_age !== $age && $record->sex() === 'M' ||
+                                $wife_age !== '' && $wife_age !== $age && $record->sex() === 'F'
+                            ) {
+                                switch ($record->sex()) {
+                                    case 'M':
+                                        /* I18N: The age of an individual at a given date */
+                                        $ageText = I18N::translateContext('Male', '(aged %s)', $age);
+                                        break;
+                                    case 'F':
+                                        /* I18N: The age of an individual at a given date */
+                                        $ageText = I18N::translateContext('Female', '(aged %s)', $age);
+                                        break;
+                                    default:
+                                        /* I18N: The age of an individual at a given date */
+                                        $ageText = I18N::translate('(aged %s)', $age);
+                                        break;
                                 }
                             }
                         }
                     }
-                    if ($ageText) {
+                    if ($fact !== 'DEAT' && $death_date->isOK() && Date::compare($death_date, $date) < 0) {
+                        $death_day = $death_date->minimumDate()->day();
+                        $event_day = $date->minimumDate()->day();
+                        if ($death_day !== 0 && $event_day !== 0 && $death_day === $event_day) {
+                            // On the exact date of death?
+                            // NOTE: this path is never reached.  Keep the code (translation) in case
+                            // we decide to re-introduce it.
+                            $ageText = I18N::translate('(on the date of death)');
+                        } else {
+                            // After death
+                            $age = (string) new Age($death_date, $date);
+                            $ageText = I18N::translate('(%s after death)', $age);
+                        }
+                        // Family events which occur after death are probably errors
+                        if ($event->record() instanceof Family) {
+                            $ageText .= view('icons/warning');
+                        }
+                    }
+                    if ($ageText !== '') {
                         $html .= ' <span class="age">' . $ageText . '</span>';
                     }
                 }
@@ -294,10 +394,8 @@ class FunctionsPrint
             I18N::translate('Wife')    => $wife_age,
         ];
 
-        foreach ($age_labels as $label => $age) {
-            if ($age !== '') {
-                $html .= ' <span class="label">' . $label . ':</span> <span class="age">' . FunctionsDate::getAgeAtEvent($age) . '</span>';
-            }
+        foreach (array_filter($age_labels) as $label => $age) {
+            $html .= ' <span class="label">' . $label . ':</span> <span class="age">' . $age . '</span>';
         }
 
         return $html;
@@ -390,10 +488,10 @@ class FunctionsPrint
      * Check for facts that may exist only once for a certain record type.
      * If the fact already exists in the second array, delete it from the first one.
      *
-     * @param string[]   $uniquefacts
-     * @param Collection $recfacts
+     * @param array<string>    $uniquefacts
+     * @param Collection<Fact> $recfacts
      *
-     * @return string[]
+     * @return array<string>
      */
     public static function checkFactUnique(array $uniquefacts, Collection $recfacts): array
     {
@@ -412,9 +510,9 @@ class FunctionsPrint
     /**
      * Print a new fact box on details pages
      *
-     * @param GedcomRecord $record    the person, family, source etc the fact will be added to
-     * @param Collection   $usedfacts an array of facts already used in this record
-     * @param string       $type      the type of record INDI, FAM, SOUR etc
+     * @param GedcomRecord     $record    the person, family, source etc the fact will be added to
+     * @param Collection<Fact> $usedfacts an array of facts already used in this record
+     * @param string           $type      the type of record INDI, FAM, SOUR etc
      *
      * @return void
      */
@@ -424,42 +522,55 @@ class FunctionsPrint
 
         // -- Add from pick list
         switch ($type) {
-            case 'INDI':
+            case Individual::RECORD_TYPE:
                 $addfacts    = preg_split('/[, ;:]+/', $tree->getPreference('INDI_FACTS_ADD'), -1, PREG_SPLIT_NO_EMPTY);
                 $uniquefacts = preg_split('/[, ;:]+/', $tree->getPreference('INDI_FACTS_UNIQUE'), -1, PREG_SPLIT_NO_EMPTY);
                 $quickfacts  = preg_split('/[, ;:]+/', $tree->getPreference('INDI_FACTS_QUICK'), -1, PREG_SPLIT_NO_EMPTY);
                 break;
-            case 'FAM':
+
+            case Family::RECORD_TYPE:
                 $addfacts    = preg_split('/[, ;:]+/', $tree->getPreference('FAM_FACTS_ADD'), -1, PREG_SPLIT_NO_EMPTY);
                 $uniquefacts = preg_split('/[, ;:]+/', $tree->getPreference('FAM_FACTS_UNIQUE'), -1, PREG_SPLIT_NO_EMPTY);
                 $quickfacts  = preg_split('/[, ;:]+/', $tree->getPreference('FAM_FACTS_QUICK'), -1, PREG_SPLIT_NO_EMPTY);
                 break;
-            case 'SOUR':
+
+            case Source::RECORD_TYPE:
                 $addfacts    = preg_split('/[, ;:]+/', $tree->getPreference('SOUR_FACTS_ADD'), -1, PREG_SPLIT_NO_EMPTY);
                 $uniquefacts = preg_split('/[, ;:]+/', $tree->getPreference('SOUR_FACTS_UNIQUE'), -1, PREG_SPLIT_NO_EMPTY);
                 $quickfacts  = preg_split('/[, ;:]+/', $tree->getPreference('SOUR_FACTS_QUICK'), -1, PREG_SPLIT_NO_EMPTY);
                 break;
-            case 'NOTE':
+
+            case Note::RECORD_TYPE:
                 $addfacts    = preg_split('/[, ;:]+/', $tree->getPreference('NOTE_FACTS_ADD'), -1, PREG_SPLIT_NO_EMPTY);
                 $uniquefacts = preg_split('/[, ;:]+/', $tree->getPreference('NOTE_FACTS_UNIQUE'), -1, PREG_SPLIT_NO_EMPTY);
                 $quickfacts  = preg_split('/[, ;:]+/', $tree->getPreference('NOTE_FACTS_QUICK'), -1, PREG_SPLIT_NO_EMPTY);
                 break;
-            case 'REPO':
+
+            case Repository::RECORD_TYPE:
                 $addfacts    = preg_split('/[, ;:]+/', $tree->getPreference('REPO_FACTS_ADD'), -1, PREG_SPLIT_NO_EMPTY);
                 $uniquefacts = preg_split('/[, ;:]+/', $tree->getPreference('REPO_FACTS_UNIQUE'), -1, PREG_SPLIT_NO_EMPTY);
                 $quickfacts  = preg_split('/[, ;:]+/', $tree->getPreference('REPO_FACTS_QUICK'), -1, PREG_SPLIT_NO_EMPTY);
                 break;
-            case 'OBJE':
+
+            case Media::RECORD_TYPE:
                 $addfacts    = ['NOTE'];
-                $uniquefacts = ['_PRIM'];
+                $uniquefacts = [];
                 $quickfacts  = [];
                 break;
-            case 'SUBM':
+
+            case Submitter::RECORD_TYPE:
                 $addfacts    = ['LANG', 'OBJE', 'NOTE', 'SHARED_NOTE'];
                 $uniquefacts = ['ADDR', 'EMAIL', 'NAME', 'PHON', 'WWW'];
                 $quickfacts  = [];
                 break;
-            case 'HEAD':
+
+            case Submission::RECORD_TYPE:
+                $addfacts    = ['NOTE', 'SHARED_NOTE'];
+                $uniquefacts = ['FAMF', 'TEMP', 'ANCE', 'DESC', 'ORDI', 'SUBM'];
+                $quickfacts  = [];
+                break;
+
+            case Header::RECORD_TYPE:
                 $addfacts    = [];
                 $uniquefacts = ['COPR', 'LANG', 'SUBM'];
                 $quickfacts  = [];
@@ -471,7 +582,7 @@ class FunctionsPrint
         $quickfacts          = array_intersect($quickfacts, $addfacts);
         $translated_addfacts = [];
         foreach ($addfacts as $addfact) {
-            $translated_addfacts[$addfact] = GedcomTag::getLabel($addfact);
+            $translated_addfacts[$addfact] = GedcomTag::getLabel($record->tag() . ':' . $addfact);
         }
         uasort($translated_addfacts, static function (string $x, string $y): int {
             return I18N::strcasecmp(I18N::translate($x), I18N::translate($y));

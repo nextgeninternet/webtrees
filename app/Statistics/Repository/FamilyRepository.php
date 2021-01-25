@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,11 +20,10 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees\Statistics\Repository;
 
 use Exception;
+use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Family;
-use Fisharebest\Webtrees\Functions\FunctionsDate;
 use Fisharebest\Webtrees\GedcomRecord;
 use Fisharebest\Webtrees\I18N;
-use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Statistics\Google\ChartChildren;
 use Fisharebest\Webtrees\Statistics\Google\ChartDivorce;
 use Fisharebest\Webtrees\Statistics\Google\ChartFamilyLargest;
@@ -79,7 +78,7 @@ class FamilyRepository
         }
 
         /** @var Family $family */
-        $family = Family::rowMapper($this->tree)($row);
+        $family = Registry::familyFactory()->mapper($this->tree)($row);
 
         if (!$family->canShow()) {
             return I18N::translate('This information is private and cannot be shown.');
@@ -133,7 +132,7 @@ class FamilyRepository
      *
      * @param int $total
      *
-     * @return array
+     * @return array<stdClass>
      */
     private function topTenGrandFamilyQuery(int $total): array
     {
@@ -160,7 +159,7 @@ class FamilyRepository
             ->select(['families.*'])
             ->limit($total)
             ->get()
-            ->map(Family::rowMapper($this->tree))
+            ->map(Registry::familyFactory()->mapper($this->tree))
             ->filter(GedcomRecord::accessFilter())
             ->map(static function (Family $family): array {
                 $count = 0;
@@ -242,7 +241,7 @@ class FamilyRepository
             ->where('f_file', '=', $this->tree->id())
             ->where('f_numchil', '=', 0)
             ->get()
-            ->map(Family::rowMapper($this->tree))
+            ->map(Registry::familyFactory()->mapper($this->tree))
             ->filter(GedcomRecord::accessFilter());
 
         $top10 = [];
@@ -291,7 +290,7 @@ class FamilyRepository
      *
      * @param int $total The total number of records to query
      *
-     * @return array
+     * @return array<stdClass>
      */
     private function ageBetweenSiblingsQuery(int $total): array
     {
@@ -337,15 +336,19 @@ class FamilyRepository
      */
     private function calculateAge(int $age): string
     {
-        if ((int) ($age / 365.25) > 0) {
-            $result = (int) ($age / 365.25) . 'y';
-        } elseif ((int) ($age / 30.4375) > 0) {
-            $result = (int) ($age / 30.4375) . 'm';
-        } else {
-            $result = $age . 'd';
+        if ($age < 31) {
+            return I18N::plural('%s day', '%s days', $age, I18N::number($age));
         }
 
-        return FunctionsDate::getAgeAtEvent($result);
+        if ($age < 365) {
+            $months = (int) ($age / 30.5);
+
+            return I18N::plural('%s month', '%s months', $months, I18N::number($months));
+        }
+
+        $years = (int) ($age / 365.25);
+
+        return I18N::plural('%s year', '%s years', $years, I18N::number($years));
     }
 
     /**
@@ -353,7 +356,7 @@ class FamilyRepository
      *
      * @param int $total The total number of records to query
      *
-     * @return array
+     * @return array<mixed>
      * @throws Exception
      */
     private function ageBetweenSiblingsNoList(int $total): array
@@ -361,9 +364,9 @@ class FamilyRepository
         $rows = $this->ageBetweenSiblingsQuery($total);
 
         foreach ($rows as $fam) {
-            $family = Family::getInstance($fam->family, $this->tree);
-            $child1 = Individual::getInstance($fam->ch1, $this->tree);
-            $child2 = Individual::getInstance($fam->ch2, $this->tree);
+            $family = Registry::familyFactory()->make($fam->family, $this->tree);
+            $child1 = Registry::individualFactory()->make($fam->ch1, $this->tree);
+            $child2 = Registry::individualFactory()->make($fam->ch2, $this->tree);
 
             if ($child1->canShow() && $child2->canShow()) {
                 // ! Single array (no list)
@@ -385,7 +388,7 @@ class FamilyRepository
      * @param int  $total The total number of records to query
      * @param bool $one   Include each family only once if true
      *
-     * @return array
+     * @return array<string,array>
      * @throws Exception
      */
     private function ageBetweenSiblingsList(int $total, bool $one): array
@@ -395,9 +398,9 @@ class FamilyRepository
         $dist  = [];
 
         foreach ($rows as $fam) {
-            $family = Family::getInstance($fam->family, $this->tree);
-            $child1 = Individual::getInstance($fam->ch1, $this->tree);
-            $child2 = Individual::getInstance($fam->ch2, $this->tree);
+            $family = Registry::familyFactory()->make($fam->family, $this->tree);
+            $child1 = Registry::individualFactory()->make($fam->ch1, $this->tree);
+            $child2 = Registry::individualFactory()->make($fam->ch2, $this->tree);
 
             $age = $this->calculateAge((int) $fam->age);
 
@@ -456,9 +459,9 @@ class FamilyRepository
         $rows = $this->ageBetweenSiblingsQuery($total);
 
         foreach ($rows as $fam) {
-            $family = Family::getInstance($fam->family, $this->tree);
-            $child1 = Individual::getInstance($fam->ch1, $this->tree);
-            $child2 = Individual::getInstance($fam->ch2, $this->tree);
+            $family = Registry::familyFactory()->make($fam->family, $this->tree);
+            $child1 = Registry::individualFactory()->make($fam->ch1, $this->tree);
+            $child2 = Registry::individualFactory()->make($fam->ch2, $this->tree);
 
             if ($child1->canShow() && $child2->canShow()) {
                 $return = '<a href="' . e($child2->url()) . '">' . $child2->fullName() . '</a> ';
@@ -610,7 +613,7 @@ class FamilyRepository
      *
      * @param int $total
      *
-     * @return array
+     * @return array<array<string,mixed>>
      */
     private function topTenFamilyQuery(int $total): array
     {
@@ -619,7 +622,7 @@ class FamilyRepository
             ->orderBy('f_numchil', 'DESC')
             ->limit($total)
             ->get()
-            ->map(Family::rowMapper($this->tree))
+            ->map(Registry::familyFactory()->mapper($this->tree))
             ->filter(GedcomRecord::accessFilter())
             ->map(static function (Family $family): array {
                 return [
@@ -835,7 +838,7 @@ class FamilyRepository
             return '';
         }
 
-        $person = Individual::getInstance($row->id, $this->tree);
+        $person = Registry::individualFactory()->make($row->id, $this->tree);
 
         switch ($type) {
             default:
@@ -1098,7 +1101,7 @@ class FamilyRepository
         $top10 = [];
         $i     = 0;
         foreach ($rows as $xref => $age) {
-            $family = Family::getInstance((string) $xref, $this->tree);
+            $family = Registry::familyFactory()->make((string) $xref, $this->tree);
             if ($type === 'name') {
                 return $family->formatList();
             }
@@ -1249,7 +1252,7 @@ class FamilyRepository
      * @param string $age_dir
      * @param int    $total
      *
-     * @return array
+     * @return array<array<string,mixed>>
      */
     private function ageBetweenSpousesQuery(string $age_dir, int $total): array
     {
@@ -1287,7 +1290,7 @@ class FamilyRepository
             ->select(['families.*'])
             ->take($total)
             ->get()
-            ->map(Family::rowMapper($this->tree))
+            ->map(Registry::familyFactory()->mapper($this->tree))
             ->filter(GedcomRecord::accessFilter())
             ->map(function (Family $family) use ($age_dir): array {
                 $husb_birt_jd = $family->husband()->getBirthDate()->minimumJulianDay();
@@ -1378,7 +1381,7 @@ class FamilyRepository
      * @param int    $year1
      * @param int    $year2
      *
-     * @return array
+     * @return array<stdClass>
      */
     public function statsMarrAgeQuery($sex, $year1 = -1, $year2 = -1): array
     {
@@ -1485,8 +1488,8 @@ class FamilyRepository
             return '';
         }
 
-        $family = Family::getInstance($row->famid, $this->tree);
-        $person = Individual::getInstance($row->i_id, $this->tree);
+        $family = Registry::familyFactory()->make($row->famid, $this->tree);
+        $person = Registry::individualFactory()->make($row->i_id, $this->tree);
 
         switch ($type) {
             default:
@@ -1686,25 +1689,15 @@ class FamilyRepository
                     ->where('d_fact', '=', 'MARR')
                     ->whereIn('d_month', ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'])
                     ->where('d_julianday2', '<>', 0);
-            })->join('individuals', static function (JoinClause $join): void {
-                $join
-                    ->on('i_file', '=', 'f_file');
             })
-            ->where('f_file', '=', $this->tree->id())
-            ->where(static function (Builder $query): void {
-                $query
-                    ->whereColumn('i_id', '=', 'f_husb')
-                    ->orWhereColumn('i_id', '=', 'f_wife');
-            });
+            ->where('f_file', '=', $this->tree->id());
 
         if ($year1 >= 0 && $year2 >= 0) {
             $query->whereBetween('d_year', [$year1, $year2]);
         }
 
         return $query
-            ->select(['f_id AS fams', 'f_husb', 'f_wife', 'd_julianday2 AS age', 'd_month AS month', 'i_id AS indi'])
-            ->orderBy('f_id')
-            ->orderBy('i_id')
+            ->select(['f_husb', 'f_wife', 'd_month AS month'])
             ->orderBy('d_julianday2');
     }
 

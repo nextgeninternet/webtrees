@@ -2,7 +2,7 @@
 
 /**
  * webtrees: online genealogy
- * Copyright (C) 2019 webtrees development team
+ * Copyright (C) 2020 webtrees development team
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -20,11 +20,9 @@ declare(strict_types=1);
 namespace Fisharebest\Webtrees;
 
 use Closure;
-use Exception;
 use Fisharebest\Webtrees\Http\RequestHandlers\FamilyPage;
 use Illuminate\Database\Capsule\Manager as DB;
 use Illuminate\Support\Collection;
-use stdClass;
 
 /**
  * A GEDCOM family (FAM) object.
@@ -54,21 +52,21 @@ class Family extends GedcomRecord
     {
         parent::__construct($xref, $gedcom, $pending, $tree);
 
-        // Fetch family members
-        if (preg_match_all('/^1 (?:HUSB|WIFE|CHIL) @(.+)@/m', $gedcom . $pending, $match)) {
-            Individual::load($tree, $match[1]);
-        }
+        // Make sure we find records in pending records.
+        $gedcom_pending = $gedcom . "\n" . $pending;
 
-        if (preg_match('/^1 HUSB @(.+)@/m', $gedcom . $pending, $match)) {
-            $this->husb = Individual::getInstance($match[1], $tree);
+        if (preg_match('/\n1 HUSB @(.+)@/', $gedcom_pending, $match)) {
+            $this->husb = Registry::individualFactory()->make($match[1], $tree);
         }
-        if (preg_match('/^1 WIFE @(.+)@/m', $gedcom . $pending, $match)) {
-            $this->wife = Individual::getInstance($match[1], $tree);
+        if (preg_match('/\n1 WIFE @(.+)@/', $gedcom_pending, $match)) {
+            $this->wife = Registry::individualFactory()->make($match[1], $tree);
         }
     }
 
     /**
      * A closure which will create a record from a database row.
+     *
+     * @deprecated since 2.0.4.  Will be removed in 2.1.0 - Use Factory::family()
      *
      * @param Tree $tree
      *
@@ -76,12 +74,7 @@ class Family extends GedcomRecord
      */
     public static function rowMapper(Tree $tree): Closure
     {
-        return static function (stdClass $row) use ($tree): Family {
-            $family = Family::getInstance($row->f_id, $tree, $row->f_gedcom);
-            assert($family instanceof Family);
-
-            return $family;
-        };
+        return Registry::familyFactory()->mapper($tree);
     }
 
     /**
@@ -101,23 +94,17 @@ class Family extends GedcomRecord
      * we just receive the XREF. For bulk records (such as lists
      * and search results) we can receive the GEDCOM data as well.
      *
+     * @deprecated since 2.0.4.  Will be removed in 2.1.0 - Use Factory::family()
+     *
      * @param string      $xref
      * @param Tree        $tree
      * @param string|null $gedcom
-     *
-     * @throws Exception
      *
      * @return Family|null
      */
     public static function getInstance(string $xref, Tree $tree, string $gedcom = null): ?Family
     {
-        $record = parent::getInstance($xref, $tree, $gedcom);
-
-        if ($record instanceof self) {
-            return $record;
-        }
-
-        return null;
+        return Registry::familyFactory()->make($xref, $tree, $gedcom);
     }
 
     /**
@@ -137,29 +124,13 @@ class Family extends GedcomRecord
         // Just show the 1 CHIL/HUSB/WIFE tag, not any subtags, which may contain private data
         preg_match_all('/\n1 (?:CHIL|HUSB|WIFE) @(' . Gedcom::REGEX_XREF . ')@/', $this->gedcom, $matches, PREG_SET_ORDER);
         foreach ($matches as $match) {
-            $rela = Individual::getInstance($match[1], $this->tree);
+            $rela = Registry::individualFactory()->make($match[1], $this->tree);
             if ($rela instanceof Individual && $rela->canShow($access_level)) {
                 $rec .= $match[0];
             }
         }
 
         return $rec;
-    }
-
-    /**
-     * Fetch data from the database
-     *
-     * @param string $xref
-     * @param int    $tree_id
-     *
-     * @return string|null
-     */
-    protected static function fetchGedcomRecord(string $xref, int $tree_id): ?string
-    {
-        return DB::table('families')
-            ->where('f_id', '=', $xref)
-            ->where('f_file', '=', $tree_id)
-            ->value('f_gedcom');
     }
 
     /**
@@ -214,7 +185,7 @@ class Family extends GedcomRecord
         // Hide a family if any member is private
         preg_match_all('/\n1 (?:CHIL|HUSB|WIFE) @(' . Gedcom::REGEX_XREF . ')@/', $this->gedcom, $matches);
         foreach ($matches[1] as $match) {
-            $person = Individual::getInstance($match, $this->tree);
+            $person = Registry::individualFactory()->make($match, $this->tree);
             if ($person && !$person->canShow($access_level)) {
                 return false;
             }
@@ -416,11 +387,11 @@ class Family extends GedcomRecord
                     return $x['type'] !== '_MARNM';
                 });
             }
-            // If the individual only has married names, create a dummy birth name.
+            // If the individual only has married names, create a fake birth name.
             if ($husb_names === []) {
                 $husb_names[] = [
                     'type' => 'BIRT',
-                    'sort' => '@N.N.',
+                    'sort' => Individual::NOMEN_NESCIO,
                     'full' => I18N::translateContext('Unknown given name', '…') . ' ' . I18N::translateContext('Unknown surname', '…'),
                 ];
             }
@@ -434,11 +405,11 @@ class Family extends GedcomRecord
                     return $x['type'] !== '_MARNM';
                 });
             }
-            // If the individual only has married names, create a dummy birth name.
+            // If the individual only has married names, create a fake birth name.
             if ($wife_names === []) {
                 $wife_names[] = [
                     'type' => 'BIRT',
-                    'sort' => '@N.N.',
+                    'sort' => Individual::NOMEN_NESCIO,
                     'full' => I18N::translateContext('Unknown given name', '…') . ' ' . I18N::translateContext('Unknown surname', '…'),
                 ];
             }
@@ -489,5 +460,17 @@ class Family extends GedcomRecord
         return
             $this->formatFirstMajorFact(Gedcom::MARRIAGE_EVENTS, 1) .
             $this->formatFirstMajorFact(Gedcom::DIVORCE_EVENTS, 1);
+    }
+
+    /**
+     * Lock the database row, to prevent concurrent edits.
+     */
+    public function lock(): void
+    {
+        DB::table('families')
+            ->where('f_file', '=', $this->tree->id())
+            ->where('f_id', '=', $this->xref())
+            ->lockForUpdate()
+            ->get();
     }
 }

@@ -8,13 +8,16 @@ use Fisharebest\Webtrees\Module\ModuleFooterInterface;
 use Fisharebest\Webtrees\Module\ModuleGlobalInterface;
 use Fisharebest\Webtrees\Module\ModuleThemeInterface;
 use Fisharebest\Webtrees\Services\ModuleService;
+use Fisharebest\Webtrees\Tree;
 use Fisharebest\Webtrees\View;
 use Fisharebest\Webtrees\Webtrees;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
- * @var string $title
- * @var string $content
+ * @var string                 $content
+ * @var ServerRequestInterface $request
+ * @var string                 $title
+ * @var Tree                   $tree
  */
 
 ?>
@@ -27,9 +30,7 @@ use Psr\Http\Message\ServerRequestInterface;
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="<?= e($meta_robots ?? 'noindex') ?>">
         <meta name="generator" content="<?= e(Webtrees::NAME) ?> <?= e(Webtrees::VERSION) ?>">
-        <?php if ($tree !== null) : ?>
-            <meta name="description" content="<?= e($tree->getPreference('META_DESCRIPTION')) ?>">
-        <?php endif ?>
+        <meta name="description" content="<?= $meta_description ?? '' ?>">
 
         <title>
             <?= strip_tags($title) ?>
@@ -40,21 +41,15 @@ use Psr\Http\Message\ServerRequestInterface;
 
         <!--Generic favicons-->
         <link rel="icon" sizes="32x32" href="<?= e(asset('favicon-32.png')) ?>">
-        <link rel="icon" sizes="57x57" href="<?= e(asset('favicon-57.png')) ?>">
-        <link rel="icon" sizes="76x76" href="<?= e(asset('favicon-76.png')) ?>">
-        <link rel="icon" sizes="96x96" href="<?= e(asset('favicon-96.png')) ?>">
         <link rel="icon" sizes="128x128" href="<?= e(asset('favicon-128.png')) ?>">
         <link rel="icon" sizes="192x192" href="<?= e(asset('favicon-192.png')) ?>">
         <!--Android-->
         <link rel="shortcut icon" sizes="196x196" href="<?= e(asset('favicon-196.png')) ?>">
-        <!--iOS-->
-        <link rel="apple-touch-icon" sizes="120x120" href="<?= e(asset('favicon-120.png')) ?>">
+        <!--iPad-->
         <link rel="apple-touch-icon" sizes="152x152" href="<?= e(asset('favicon-152.png')) ?>">
+        <!--iPhone-->
         <link rel="apple-touch-icon" sizes="180x180" href="<?= e(asset('favicon-180.png')) ?>">
-        <!--Windows 8 IE 10-->
-        <meta name="msapplication-TileColor" content="#FFFFFF">
-        <meta name="msapplication-TileImage" content="<?= e(asset('favicon-144.png')) ?>">
-        <!--Windows 8.1 + IE11 and above-->
+        <!--IE11/Edge-->
         <meta name="msapplication-config" content="<?= e(asset('browserconfig.xml')) ?>">
 
         <link rel="manifest" href="<?= e(asset('site.webmanifest')) ?>">
@@ -67,15 +62,15 @@ use Psr\Http\Message\ServerRequestInterface;
         <?= View::stack('styles') ?>
 
         <?= app(ModuleService::class)->findByInterface(ModuleGlobalInterface::class)->map(static function (ModuleGlobalInterface $module): string {
-    return $module->headContent();
+            return $module->headContent();
         })->implode('') ?>
 
         <?= DebugBar::renderHead() ?>
     </head>
 
-    <body class="wt-global wt-theme-<?= e(app(ModuleThemeInterface::class)->name()) ?> wt-route-<?= e(app(ServerRequestInterface::class)->getAttribute('route')) ?>">
+    <body class="wt-global wt-theme-<?= e(app(ModuleThemeInterface::class)->name()) ?> wt-route-<?= e(substr(strrchr($request->getAttribute('route')->name, '\\'),1)) ?>">
         <header class="wt-header-wrapper d-print-none">
-            <div class="container wt-header-container">
+            <div class="container-lg wt-header-container">
                 <div class="row wt-header-content">
                     <div class="wt-accessibility-links position-fixed">
                         <a class="sr-only sr-only-focusable btn btn-info btn-sm" href="#content">
@@ -89,11 +84,14 @@ use Psr\Http\Message\ServerRequestInterface;
                         <h1 class="col wt-site-title"><?= e($tree->title()) ?></h1>
 
                         <div class="col wt-header-search">
-                            <form method="post" action="<?= e(route(SearchQuickAction::class, ['tree' => $tree->name()])) ?>" class="wt-header-search-form" role="search">
+                            <form method="post"
+                                  action="<?= e(route(SearchQuickAction::class, ['tree' => $tree->name()])) ?>"
+                                  class="wt-header-search-form" role="search">
                                 <?= csrf_field() ?>
                                 <div class="input-group">
                                     <label class="sr-only" for="quick-search"><?= I18N::translate('Search') ?></label>
-                                    <input type="search" class="form-control wt-header-search-field" id="quick-search" name="query" size="15" placeholder="<?= I18N::translate('Search') ?>">
+                                    <input type="search" class="form-control wt-header-search-field" id="quick-search"
+                                           name="query" size="15" placeholder="<?= I18N::translate('Search') ?>">
                                     <div class="input-group-append">
                                         <button type="submit" class="btn btn-primary wt-header-search-button">
                                             <?= view('icons/search') ?>
@@ -107,7 +105,7 @@ use Psr\Http\Message\ServerRequestInterface;
                     <div class="col wt-secondary-navigation">
                         <ul class="nav wt-user-menu">
                             <?php foreach (app(ModuleThemeInterface::class)->userMenu($tree) as $menu) : ?>
-                                <?= $menu->bootstrap4() ?>
+                                <?= view('components/menu-item', ['menu' => $menu]) ?>
                             <?php endforeach ?>
                         </ul>
                     </div>
@@ -116,7 +114,7 @@ use Psr\Http\Message\ServerRequestInterface;
                         <nav class="col wt-primary-navigation">
                             <ul class="nav wt-genealogy-menu">
                                 <?php foreach (app(ModuleThemeInterface::class)->genealogyMenu($tree) as $menu) : ?>
-                                    <?= $menu->bootstrap4() ?>
+                                    <?= view('components/menu-item', ['menu' => $menu]) ?>
                                 <?php endforeach ?>
                             </ul>
                         </nav>
@@ -126,11 +124,12 @@ use Psr\Http\Message\ServerRequestInterface;
         </header>
 
         <main id="content" class="wt-main-wrapper">
-            <div class="container wt-main-container">
+            <div class="container-lg wt-main-container">
                 <div class="flash-messages">
                     <?php foreach (FlashMessages::getMessages() as $message) : ?>
                         <div class="alert alert-<?= e($message->status) ?> alert-dismissible" role="alert">
-                            <button type="button" class="close" data-dismiss="alert" aria-label="<?= I18N::translate('close') ?>">
+                            <button type="button" class="close" data-dismiss="alert"
+                                    aria-label="<?= I18N::translate('close') ?>">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                             <?= $message->text ?>
@@ -142,9 +141,9 @@ use Psr\Http\Message\ServerRequestInterface;
             </div>
         </main>
 
-        <footer class="wt-footers container d-print-none">
+        <footer class="container-lg wt-footers d-print-none">
             <?= app(ModuleService::class)->findByInterface(ModuleFooterInterface::class)->map(static function (ModuleFooterInterface $module) use ($request): string {
-    return $module->getFooter($request);
+                return $module->getFooter($request);
             })->implode('') ?>
         </footer>
 
@@ -157,29 +156,29 @@ use Psr\Http\Message\ServerRequestInterface;
                 // Enable colorbox for images
                 $("a[type^=image].gallery").colorbox({
                     // Don't scroll window with document
-                    fixed:          true,
-                    width:          "85%",
-                    height:         "85%",
-                    current:        "",
-                    previous:       '<i class="fas fa-arrow-left wt-icon-flip-rtl" title="<?= I18N::translate('previous') ?>"></i>',
-                    next:           '<i class="fas fa-arrow-right wt-icon-flip-rtl" title="<?= I18N::translate('next') ?>"></i>',
+                    fixed: true,
+                    width: "85%",
+                    height: "85%",
+                    current: "",
+                    previous: '<i class="fas fa-arrow-left wt-icon-flip-rtl" title="<?= I18N::translate('previous') ?>"></i>',
+                    next: '<i class="fas fa-arrow-right wt-icon-flip-rtl" title="<?= I18N::translate('next') ?>"></i>',
                     slideshowStart: '<i class="fas fa-play" title="<?= I18N::translate('Play') ?>"></i>',
-                    slideshowStop:  '<i class="fas fa-stop" title="<?= I18N::translate('Stop') ?>"></i>',
-                    close:          '<i class="fas fa-times" title="<?= I18N::translate('close') ?>"></i>',
-                    title:          function () {
+                    slideshowStop: '<i class="fas fa-stop" title="<?= I18N::translate('Stop') ?>"></i>',
+                    close: '<i class="fas fa-times" title="<?= I18N::translate('close') ?>"></i>',
+                    title: function () {
                         return this.dataset.title;
                     },
-                    photo:          true,
-                    rel:            "gallery", // Turn all images on the page into a slideshow
-                    slideshow:      true,
-                    slideshowAuto:  false,
+                    photo: true,
+                    rel: "gallery", // Turn all images on the page into a slideshow
+                    slideshow: true,
+                    slideshowAuto: false,
                     // Add wheelzoom to the displayed image
-                    onComplete:     function () {
+                    onComplete: function () {
                         // Disable click on image triggering next image
                         // https://github.com/jackmoore/colorbox/issues/668
                         $(".cboxPhoto").unbind("click");
-
-                        wheelzoom(document.querySelectorAll(".cboxPhoto"));
+                        // Enable wheel/pinch zooming
+                        $('.cboxPhoto').wrap("<pinch-zoom></pinch-zoom>");
                     }
                 });
             });
@@ -188,7 +187,7 @@ use Psr\Http\Message\ServerRequestInterface;
         <?= View::stack('javascript') ?>
 
         <?= app(ModuleService::class)->findByInterface(ModuleGlobalInterface::class)->map(static function (ModuleGlobalInterface $module): string {
-    return $module->bodyContent();
+            return $module->bodyContent();
         })->implode('') ?>
 
         <?= DebugBar::render() ?>
